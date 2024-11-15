@@ -1,0 +1,1 @@
+{"mtaAPIKey": "", "subwayData": {"": {"": ""}, "": {"": ""}}, "subwayMinMaxAway": {"A": {"min": 5, "max": 40}, "C": {"min": 5, "max": 40}}, "busData": {"": {"": ""}, "": {"": ""}}, "busMinMaxAway": {"": {"min": 0, "max": 40}, "+": {"min": 0, "max": 40}}, "mtaAPIURIs": {"Subway": "", "Bus": ""}}
