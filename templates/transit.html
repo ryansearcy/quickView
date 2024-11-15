@@ -1,0 +1,135 @@
+<!doctype=html>
+	<script type='text/javascript'>
+		function fetchUpdates() {
+			fetch("/playback-data").then((response) => response.json()).then((result) => {
+				spotify_data = JSON.parse(JSON.stringify(result));
+				if (spotify_data["status_code"] == 204 || (spotify_data["status_code"] == 200 && !spotify_data["is_playing"])) {
+					fetch("/transit-times").then((response) => response.json()).then((result) => {
+						time_data = JSON.parse(JSON.stringify(result));
+						for (var type in time_data) {
+							for (var line in time_data[type]) {
+								for (var stop in time_data[type][line]) {
+									if (time_data[type][line][stop].length != 0) {
+										document.getElementById(line + '-' + stop).innerHTML = time_data[type][line][stop];
+									}
+									else {
+										document.getElementById(line + '-' + stop).innerHTML = "No Departure Times Available";
+									}
+								}
+							}
+						}
+					})
+				}
+				else {
+					window.location.replace("/spotify")
+				}
+			});
+		}
+		window.onload = setInterval(fetchUpdates, 10000)
+	</script>
+	<style>
+		body {
+			background-color: black;
+		}
+
+		.logo {
+			display: flex;
+			float: left;
+			width: 30%;
+			height: 20%;
+			justify-content: center;
+			align-items: left;
+			flex-direction: column;
+			margin-bottom: 2vmin;
+		}
+
+		.text {
+			display: flex;
+			float: left;
+			width: 70%;
+			height: 20%;
+			justify-content: center;
+			flex-direction: column;
+			color: white;
+			margin-bottom: 2vmin;
+		}
+
+		.bus_lines {
+			display: flex;
+			float: left;
+			width: 30%;
+			height: 20%;
+			justify-content: center;
+			align-items: center;
+			flex-direction: column;
+			margin-bottom: 2vmin;
+		}
+
+		.row:after {
+			display: table;
+			clear: both;
+			padding: 0.1em;
+		}
+
+		#page_title {
+			text-align: center;
+			font-size: 4em;
+			color: white;
+			margin-bottom: 0;
+		}
+
+		.line_name {
+			color: white;
+			font-weight: bold;
+			font-size: 12vmin;
+			background-color: #11117D;
+			padding-left: 2vmin;
+			padding-right: 2vmin;
+		}
+
+		.subway_logo {
+			height: 100%;
+			object-fit: contain;
+		}
+
+		.times {
+			color: white;
+			height: max-content;
+			width: 100%;
+			padding-left: 5vmin;
+			font-size: 7vmin;
+		}
+	</style>
+
+	<body>
+		<p id='page_title'>Transit Times</p>
+		<div class="row">
+			{% for line in times['Subway'] %}
+			<div class="logo">
+				<img class='subway_logo' src="static/logos/{{line}}.png" width="100%" height="100%"
+					object-fit="contain">
+			</div>
+			{% for stop in times['Subway'][line] %}
+			{% set split_times = times['Subway'][line][stop].split("<br>") %}
+			<div class="text">
+				<p class='times' id='{{line}}-{{stop}}'>{% if split_times[1]|length == 0 %}No Departure
+					Times Available
+					{% else %}{{ split_times[0] }}<br>{{ split_times[1] }}{% endif %}</p>
+			</div>
+			{% endfor %}
+			{% endfor %}
+			{% for line in times['Bus'] %}
+			<div class="bus_lines">
+				<p class='line_name'>{{line}}</p>
+			</div>
+			{% for stop in times['Bus'][line] %}
+			{% set split_times = times['Bus'][line][stop].split("<br>") %}
+			<div class="text">
+				<p class='times' id='{{line}}-{{stop}}'>{% if split_times[1]|length == 0 %}No Departure
+					Times Available
+					{% else %}{{ split_times[0] }}<br>{{ split_times[1] }}{% endif %}</p>
+			</div>
+			{% endfor %}
+			{% endfor %}
+		</div>
+	</body>

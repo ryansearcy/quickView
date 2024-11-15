@@ -1,0 +1,74 @@
+<!doctype=html>
+    <script type='text/javascript'>
+        function fetchUpdates() {
+            fetch("/playback-data").then((response) => response.json()).then((result) => {
+                var spotify_data = JSON.parse(JSON.stringify(result))
+                if (spotify_data["status_code"] != 200) {
+                    window.location.reload()
+                }
+                if (spotify_data["name"] != document.getElementById('song_title').innerHTML) {
+                    document.getElementById('song_title').innerHTML = spotify_data["name"]
+                    document.getElementById('cover_art').setAttribute("src", spotify_data["cover_art"])
+                    document.getElementById('artists').innerHTML = spotify_data["artists"]
+                }
+                if (!spotify_data["is_playing"]) {
+                    window.location.replace("/realtime-transit")
+                }
+            });
+        }
+        window.onload = setInterval(fetchUpdates, 1000)
+    </script>
+    <style>
+        body {
+            background-color: black;
+            margin: 0;
+            cursor: none;
+        }
+        .covers {
+            width: 100%;
+            height: 70%;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            margin-top: 5vmin;
+        }
+        .column {
+            width: 100%;
+            height: 30%;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        #song_title {
+            text-align: center;
+            color: white;
+            width: 100%;
+            font-size: 4em;
+            margin-bottom: 0.2em;
+            margin-right: 0.2em;
+        }
+
+        #artists {
+            text-align: center;
+            color: white;
+            width: 100%;
+            font-size: 2.5em;
+            font-style: italic;
+            margin-top: 0.2em;
+            margin-right: 0.2em;
+        }
+
+        #cover_art {
+            height: 100%;
+            width: 100%;
+            object-fit: contain;
+        }
+    </style>
+    <body>
+        <div class="covers" id="art"><img id='cover_art' src={{ cover_art }} alt="cover art"></div>
+        <div class="column" id="titles">
+            <p id='song_title'>{{ title }}</p>
+            <p id='artists'>{{ artists }}</p>
+        </div>
+    </body>
