@@ -15,11 +15,12 @@ emptyString: str = ''
 emptyTypes: dict[type, Any] = {str: emptyString, list: [], dict: {}, datetime: datetime(1900, 1, 1)}
 
 #Spotify API variables
-spotifyAPIVariables: list[str] = ['clientID', 'clientSecret', 'appScope', 'redirectUri']
+spotifyAPIVariables: list[str] = ['clientID', 'clientSecret', 'appScope', 'redirectUri', 'deviceID']
 clientID: str = emptyTypes[str]
 clientSecret: str = emptyTypes[str]
 appScope: str = emptyTypes[str]
 redirectUri: str = emptyTypes[str]
+deviceID: str = emptyTypes[str]
 #Spotify Token Variables
 spotifyTokenVariables: list[str] = ['accessToken', 'refreshToken', 'expiresAt']
 accessToken: str = emptyTypes[str]
@@ -100,9 +101,10 @@ def getSpotifyPlaybackData() -> dict:
         playbackData = playbackInfo.json()
     except JSONDecodeError:
         return {'status_code': playbackInfo.status_code, 'is_playing': False}
+    quickView.logger.debug('Device ID: ' + playbackData['device']['id'])
     playbackData: dict[str, str | int | bool] = {
-        'status_code': playbackInfo.status_code,
-        'is_playing': playbackData['is_playing'] if 'is_playing' in playbackData else False,
+        'status_code': playbackInfo.status_code if checkForEmptyGlobalVariables('deviceID') or playbackData['device']['id'] == deviceID else 204,
+        'is_playing': playbackData['is_playing'] if 'is_playing' in playbackData and (checkForEmptyGlobalVariables('deviceID') or playbackData['device']['id'] == deviceID) else False,
         'name': playbackData['item']['name'] if 'item' in playbackData else '',
         'artists': ', '.join([artist['name'] for artist in playbackData['item']['artists']]) if 'item' in playbackData else '',
         'cover_art': playbackData['item']['album']['images'][0]['url'] if 'item' in playbackData else ''

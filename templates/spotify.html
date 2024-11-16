@@ -3,16 +3,16 @@
         function fetchUpdates() {
             fetch("/playback-data").then((response) => response.json()).then((result) => {
                 var spotify_data = JSON.parse(JSON.stringify(result))
-                if (spotify_data["status_code"] != 200) {
+                if (spotify_data["status_code"] != 200 && spotify_data["status_code"] != 204) {
                     window.location.reload()
+                }
+                if (!spotify_data["is_playing"]) {
+                    window.location.replace("/realtime-transit")
                 }
                 if (spotify_data["name"] != document.getElementById('song_title').innerHTML) {
                     document.getElementById('song_title').innerHTML = spotify_data["name"]
                     document.getElementById('cover_art').setAttribute("src", spotify_data["cover_art"])
                     document.getElementById('artists').innerHTML = spotify_data["artists"]
-                }
-                if (!spotify_data["is_playing"]) {
-                    window.location.replace("/realtime-transit")
                 }
             });
         }
