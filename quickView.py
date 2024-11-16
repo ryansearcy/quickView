@@ -48,13 +48,17 @@ def checkForEmptyGlobalVariables(variableNames: list[str] | str) -> bool:
     globalVars = globals()
     return [globalVars[v] == emptyTypes[type(globalVars[v])] for v in variables].__contains__(True)
 
-def setGlobalVariable(variableName: str, value) -> None:
-    globalVariables = globals()
-    if globalVariables.keys().__contains__(variableName) is False:
-        raise ValueError('Variable does not exist')
-    if type(globalVariables[variableName]) != type(value):
-        raise ValueError('Value type does not match variable')
-    globals()[variableName] = value
+def setGlobalVariable(variableName: str | list[str], value: Any) -> None:
+    if type(variableName) == str:
+        globalVariables = globals()
+        if variableName not in appVariables:
+            raise ValueError('Variable does not exist in editable scope')
+        if type(globalVariables[variableName]) != type(value):
+            raise ValueError('Value type does not match variable')
+        globals()[variableName] = value
+    else:
+        for v in variableName:
+            setGlobalVariable(v, value)
     return
 
 def loadJSONVariables(name: str) -> None:
@@ -97,18 +101,20 @@ def getSpotifyPlaybackData() -> dict:
     playbackHeaders: dict = {'Authorization':'Bearer ' + accessToken}
     playbackInfo: Response = requests.get('https://api.spotify.com/v1/me/player', headers=playbackHeaders)
     quickView.logger.debug('Playback State Response Code: ' + playbackInfo.status_code.__str__())
-    try:
+    if playbackInfo.status_code == 200:
         playbackData = playbackInfo.json()
-    except JSONDecodeError:
-        return {'status_code': playbackInfo.status_code, 'is_playing': False}
-    quickView.logger.debug('Device ID: ' + playbackData['device']['id'])
-    playbackData: dict[str, str | int | bool] = {
-        'status_code': playbackInfo.status_code if checkForEmptyGlobalVariables('deviceID') or playbackData['device']['id'] == deviceID else 204,
-        'is_playing': playbackData['is_playing'] if 'is_playing' in playbackData and (checkForEmptyGlobalVariables('deviceID') or playbackData['device']['id'] == deviceID) else False,
-        'name': playbackData['item']['name'] if 'item' in playbackData else '',
-        'artists': ', '.join([artist['name'] for artist in playbackData['item']['artists']]) if 'item' in playbackData else '',
-        'cover_art': playbackData['item']['album']['images'][0]['url'] if 'item' in playbackData else ''
-    }
+        quickView.logger.debug('Device ID: ' + playbackData['device']['id'])
+        playbackData: dict[str, str | int | bool] = {
+            'status_code': playbackInfo.status_code if checkForEmptyGlobalVariables('deviceID') or playbackData['device']['id'] == deviceID else 204,
+            'is_playing': playbackData['is_playing'] if 'is_playing' in playbackData and (checkForEmptyGlobalVariables('deviceID') or playbackData['device']['id'] == deviceID) else False,
+            'name': playbackData['item']['name'] if 'item' in playbackData else '',
+            'artists': ', '.join([artist['name'] for artist in playbackData['item']['artists']]) if 'item' in playbackData else '',
+            'cover_art': playbackData['item']['album']['images'][0]['url'] if 'item' in playbackData else ''
+        }
+    else:
+        if playbackInfo.status_code != 204:
+            setGlobalVariable(['accessToken', 'refreshToken'], emptyTypes[str])
+        playbackData: dict[str, int | bool] = {'status_code': playbackInfo.status_code, 'is_playing': False}
     return playbackData
 
 @quickView.route("/playback-data")
