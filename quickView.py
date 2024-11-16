@@ -103,7 +103,7 @@ def getSpotifyPlaybackData() -> dict:
         return {'status_code': playbackInfo.status_code, 'is_playing': False}
     quickView.logger.debug('Device ID: ' + playbackData['device']['id'])
     playbackData: dict[str, str | int | bool] = {
-        'status_code': playbackInfo.status_code if checkForEmptyGlobalVariables('deviceID') or playbackData['device']['id'] == deviceID else 204,
+        'status_code': playbackInfo.status_code,
         'is_playing': playbackData['is_playing'] if 'is_playing' in playbackData and (checkForEmptyGlobalVariables('deviceID') or playbackData['device']['id'] == deviceID) else False,
         'name': playbackData['item']['name'] if 'item' in playbackData else '',
         'artists': ', '.join([artist['name'] for artist in playbackData['item']['artists']]) if 'item' in playbackData else '',
