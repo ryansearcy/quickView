@@ -3,9 +3,6 @@
         function fetchUpdates() {
             fetch("/playback-data").then((response) => response.json()).then((result) => {
                 var spotify_data = JSON.parse(JSON.stringify(result))
-                if (spotify_data["status_code"] != 200 && spotify_data["status_code"] != 204) {
-                    window.location.reload()
-                }
                 if (!spotify_data["is_playing"]) {
                     window.location.replace("/realtime-transit")
                 }
