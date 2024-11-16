@@ -9,12 +9,7 @@
 						for (var type in time_data) {
 							for (var line in time_data[type]) {
 								for (var stop in time_data[type][line]) {
-									if (time_data[type][line][stop].length != 0) {
-										document.getElementById(line + '-' + stop).innerHTML = time_data[type][line][stop];
-									}
-									else {
-										document.getElementById(line + '-' + stop).innerHTML = "No Departure Times Available";
-									}
+									document.getElementById(line + '-' + stop).innerHTML = time_data[type][line][stop];
 								}
 							}
 						}

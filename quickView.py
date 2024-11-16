@@ -153,8 +153,12 @@ def fetchTransitTimes(apiURI: str, lineData: dict, minMaxAway: dict):
             arrivalTimes[routeID][stopID].append(minutesAway)
     for line in arrivalTimes:
         for stop in arrivalTimes[line]:
-            arrivalTimes[line][stop].sort()
-            arrivalTimes[line][stop] = 'To ' + lineData[line][stop] + ':<br>' + ', '.join([str(times) for times in arrivalTimes[line][stop]])
+            if len(arrivalTimes[line][stop]) == 0:
+                arrivalTimes[line][stop] = 'No Departure Times Available'
+            else:
+                arrivalTimes[line][stop].sort()
+                arrivalTimes[line][stop] = ', '.join([str(times) for times in arrivalTimes[line][stop]])
+            arrivalTimes[line][stop] = 'To ' + lineData[line][stop] + ':<br>' + arrivalTimes[line][stop]
     return arrivalTimes
 
 @quickView.route("/realtime-transit")
