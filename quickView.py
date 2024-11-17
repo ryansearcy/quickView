@@ -12,7 +12,7 @@ type StopID = str
 type TripID = str
 
 emptyString: str = ''
-emptyTypes: dict[type, Any] = {str: emptyString, list: [], dict: {}, datetime: datetime(1900, 1, 1)}
+emptyTypes: dict[type, Any] = {str: emptyString, list: [], dict: {}, datetime: datetime.today()}
 
 #Spotify API variables
 spotifyAPIVariables: list[str] = ['clientID', 'clientSecret', 'appScope', 'redirectUri', 'deviceID']
@@ -87,16 +87,29 @@ def genAuthToken() -> Response:
         quickView.logger.debug('Returned State is null')
         return "<h1>Error: state is null</h1>"
     formData = {'code': authCode, 'redirect_uri': redirectUri, 'grant_type':'authorization_code'}
-    headers = {'content_type':'application/x-www-form-urlencoded', 'Authorization': 'Basic ' + base64.b64encode((clientID + ':' +clientSecret).encode('ascii')).decode('ascii')}
+    headers = {'Content-Type':'application/x-www-form-urlencoded', 'Authorization': 'Basic ' + base64.b64encode((clientID + ':' +clientSecret).encode('ascii')).decode('ascii')}
     authResponse = requests.post('https://accounts.spotify.com/api/token', data=formData, headers=headers).json()
     setGlobalVariable('accessToken', authResponse['access_token'])
     setGlobalVariable('refreshToken', authResponse['refresh_token'])
-    setGlobalVariable('expiresAt', datetime.today() + timedelta(seconds=authResponse['expires_in']))
+    setGlobalVariable('expiresAt', datetime.today() + timedelta(seconds=(round(authResponse['expires_in']*0.75))))
     return redirect('/spotify')
+
+def refreshAuthToken() -> None:
+    formData = {'refresh_token': refreshToken, 'grant_type':'refresh_token'}
+    headers = {'Authorization': 'Basic ' + base64.b64encode((clientID + ':' +clientSecret).encode('ascii')).decode('ascii')}
+    authResponse = requests.post('https://accounts.spotify.com/api/token', data=formData, headers=headers).json()
+    quickView.logger.debug('Refresh data: ' + authResponse.__str__())
+    setGlobalVariable('accessToken', authResponse['access_token'])
+    if 'refresh_token' in authResponse:
+        setGlobalVariable('refresh_token', authResponse['refresh_token'])
+    setGlobalVariable('expiresAt', datetime.today() + timedelta(seconds=(round(authResponse['expires_in']*0.75))))
+    return
 
 def getSpotifyPlaybackData() -> dict:
     if checkForEmptyGlobalVariables('accessToken'):
-        return {'status_code': 500, 'is_playing': False}
+        return {'status_code': 400, 'is_playing': False}
+    if expiresAt <= datetime.today():
+        refreshAuthToken()
     quickView.logger.debug('accessToken Value: ' + accessToken)
     playbackHeaders: dict = {'Authorization':'Bearer ' + accessToken}
     playbackInfo: Response = requests.get('https://api.spotify.com/v1/me/player', headers=playbackHeaders)
