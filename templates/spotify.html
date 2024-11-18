@@ -7,53 +7,121 @@
                     window.location.replace("/realtime-transit")
                 }
                 if (spotify_data["name"] != document.getElementById('song_title').innerHTML) {
+                    document.getElementById('song_title').className = 'title'
+                    document.getElementById('artists').className = 'artist'
                     document.getElementById('song_title').innerHTML = spotify_data["name"]
                     document.getElementById('cover_art').setAttribute("src", spotify_data["cover_art"])
                     document.getElementById('artists').innerHTML = spotify_data["artists"]
+                    if (document.getElementById('song_title').clientWidth < document.getElementById('song_title').scrollWidth) {
+                        document.getElementById('song_title').className = 'scroll_title'
+                    }
+                    if (document.getElementById('artists').clientWidth < document.getElementById('artists').scrollWidth) {
+                        document.getElementById('artists').className = 'scroll_artist'
+                    }
                 }
             });
         }
-        window.onload = setInterval(fetchUpdates, 1000)
+        function checkWidth() {
+            if (document.getElementById('song_title').clientWidth < document.getElementById('song_title').scrollWidth) {
+                document.getElementById('song_title').className = 'scroll_title'
+            }
+            if (document.getElementById('artists').clientWidth < document.getElementById('artists').scrollWidth) {
+                document.getElementById('artists').className = 'scroll_artist'
+            }
+        }
+        window.addEventListener("load", myInit, true); function myInit() {
+            checkWidth();
+            setInterval(fetchUpdates, 1000);
+        }
     </script>
     <style>
         body {
             background-color: black;
             margin: 0;
-            cursor: none;
         }
         .covers {
-            width: 100%;
-            height: 70%;
+            width: 100vw;
+            height: 65vh;
             justify-content: center;
             align-items: center;
             flex-direction: column;
-            margin-top: 5vmin;
+            margin-top: 5vh;
         }
         .column {
-            width: 100%;
-            height: 30%;
+            width: 100vw;
+            height: 25vh;
             justify-content: center;
             align-items: center;
             flex-direction: column;
         }
 
-        #song_title {
-            text-align: center;
+        .title_text {
+            width: 100vw;
+            white-space: nowrap;
+            overflow: hidden;
+            box-sizing: border-box;
+            position: relative;
+            margin-top: 5vh;
+            margin-right: 1vw;
             color: white;
-            width: 100%;
-            font-size: 4em;
-            margin-bottom: 0.2em;
-            margin-right: 0.2em;
         }
 
-        #artists {
+        .scroll_title {
+            display: inline-block;
+            animation: scroll-rtl 20s linear infinite;
+            position: relative;
+            padding-inline: 1rem;
+            font-size: 12vmin;
+            margin: 0;
+        }
+
+        .title {
+            font-size: 12vmin;
             text-align: center;
+            width: 100vw;
+            margin: 0;
+        }
+
+        .artist_text {
+            width: 100vw;
+            white-space: nowrap;
+            overflow: hidden;
+            box-sizing: border-box;
+            position: relative;
+            margin-top: 1vh;
+            margin-right: 1vw;
             color: white;
-            width: 100%;
-            font-size: 2.5em;
+        }
+
+        .scroll_artist {
+            display: inline-block;
+            animation: scroll-rtl 20s linear infinite;
+            position: relative;
+            padding-inline: 1rem;
+            font-size: 7vmin;
             font-style: italic;
-            margin-top: 0.2em;
-            margin-right: 0.2em;
+            margin: 0;
+        }
+
+        .artist {
+            text-align: center;
+            width: 100vw;
+            font-size: 7vmin;
+            font-style: italic;
+            margin: 0;
+        }
+
+        @keyframes scroll-rtl {
+            20% {
+                transform: translate(0, 0);
+                left: 0%;
+            }
+
+            80%,
+            100% {
+                transform: translate(-100%, 0);
+                left: 100%;
+            }
         }
 
         #cover_art {
@@ -65,7 +133,11 @@
     <body>
         <div class="covers" id="art"><img id='cover_art' src={{ cover_art }} alt="cover art"></div>
         <div class="column" id="titles">
-            <p id='song_title'>{{ title }}</p>
-            <p id='artists'>{{ artists }}</p>
+            <div class="title_text">
+                <p id='song_title' class="title">{{ title }}</p>
+            </div>
+            <div class="artist_text">
+                <p id='artists' class="artist">{{ artists }}</p>
+            </div>
         </div>
     </body>
