@@ -7,28 +7,41 @@
                     window.location.replace("/realtime-transit")
                 }
                 if (spotify_data["name"] != document.getElementById('song_title').innerHTML) {
+                    document.getElementById('song_title').className = 'title'
                     document.getElementById('song_title').innerHTML = spotify_data["name"]
                     document.getElementById('cover_art').setAttribute("src", spotify_data["cover_art"])
                     document.getElementById('artists').innerHTML = spotify_data["artists"]
+                    if (document.getElementById('song_title').clientWidth < document.getElementById('song_title').scrollWidth) {
+                        document.getElementById('song_title').className = 'scroll_text'
+                    }
                 }
             });
         }
-        window.onload = setInterval(fetchUpdates, 1000)
+        function checkWidth() {
+            if (document.getElementById('song_title').clientWidth < document.getElementById('song_title').scrollWidth) {
+                document.getElementById('song_title').className = 'scroll_text'
+            }
+        }
+        window.addEventListener("load", myInit, true); function myInit() {
+            checkWidth();
+            setInterval(fetchUpdates, 1000);
+        }
     </script>
     <style>
         body {
             background-color: black;
             margin: 0;
-            cursor: none;
         }
+
         .covers {
             width: 100%;
             height: 70%;
             justify-content: center;
             align-items: center;
             flex-direction: column;
-            margin-top: 5vmin;
+            margin-top: 1%;
         }
+
         .column {
             width: 100%;
             height: 30%;
@@ -37,13 +50,45 @@
             flex-direction: column;
         }
 
-        #song_title {
-            text-align: center;
-            color: white;
+        .scroll {
             width: 100%;
+            white-space: nowrap;
+            overflow: hidden;
+            box-sizing: border-box;
+            position: relative;
+            margin-top: 0.5%;
+            margin-right: 0.5%;
+        }
+
+        .scroll_text {
+            display: inline-block;
+            animation: scroll-rtl 14s ease-in-out infinite;
+            position: relative;
+            padding-inline: 1rem;
             font-size: 4em;
-            margin-bottom: 0.2em;
-            margin-right: 0.2em;
+            color: white;
+            margin: 0;
+        }
+
+        .title {
+            font-size: 4em;
+            color: white;
+            text-align: center;
+            width: 100%;
+            margin: 0;
+        }
+
+        @keyframes scroll-rtl {
+            25% {
+                transform: translate(0, 0);
+                left: 0%;
+            }
+
+            75%,
+            100% {
+                transform: translate(-100%, 0);
+                left: 100%;
+            }
         }
 
         #artists {
@@ -52,8 +97,8 @@
             width: 100%;
             font-size: 2.5em;
             font-style: italic;
-            margin-top: 0.2em;
-            margin-right: 0.2em;
+            margin-top: 0.5%;
+            margin-right: 0.5%;
         }
 
         #cover_art {
@@ -62,10 +107,15 @@
             object-fit: contain;
         }
     </style>
+
     <body>
         <div class="covers" id="art"><img id='cover_art' src={{ cover_art }} alt="cover art"></div>
         <div class="column" id="titles">
-            <p id='song_title'>{{ title }}</p>
-            <p id='artists'>{{ artists }}</p>
+            <div class="scroll">
+                <p id='song_title' class="title">{{ title }}</p>
+            </div>
+            <div>
+                <p id='artists'>{{ artists }}</p>
+            </div>
         </div>
     </body>
