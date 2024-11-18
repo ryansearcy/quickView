@@ -30,17 +30,18 @@
 		.logo {
 			display: flex;
 			float: left;
-			width: 24vw;
+			width: 20vw;
 			height: {{(100/(times['Subway']|length + times['Bus']|length))-2}}vh;
 			justify-content: center;
 			flex-direction: column;
 			margin-top: 1vh;
+			margin-left: 5vw;
 		}
 
 		.text {
 			display: flex;
 			float: left;
-			width: 74vw;
+			width: 70vw;
 			height: {{(100/(times['Subway']|length + times['Bus']|length))-2}}vh;
 			color: white;
 			justify-content: center;
@@ -52,13 +53,14 @@
 		.bus_lines {
 			display: flex;
 			float: left;
-			width: 24vw;
+			width: 20vw;
 			height: {{(100/(times['Subway']|length + times['Bus']|length))-2}}vh;
 			color: white;
 			justify-content: center;
 			align-items: center;
 			flex-direction: column;
 			margin-top: 1vh;
+			margin-left: 5vw;
 		}
 
 		.row:after {
@@ -73,11 +75,14 @@
 			background-color: #11117D;
 			padding-left: 1vw;
 			padding-right: 1vw;
+			margin: 0;
+
 		}
 
 		.subway_logo {
 			height: 100%;
 			object-fit: contain;
+			margin: 0;
 		}
 
 		.times {
@@ -93,8 +98,7 @@
 		<div class="row">
 			{% for line in times['Subway'] %}
 			<div class="logo">
-				<img class='subway_logo' src="static/logos/{{line}}.png" width="100%" height="100%"
-					object-fit="contain">
+				<img class='subway_logo' src="static/logos/{{line}}.png">
 			</div>
 			{% for stop in times['Subway'][line] %}
 			{% set split_times = times['Subway'][line][stop].split("<br>") %}
