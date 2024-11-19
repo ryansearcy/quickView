@@ -30,7 +30,7 @@
 		.logo {
 			display: flex;
 			float: left;
-			width: 20vw;
+			width: 15vw;
 			height: {{(100/(times['Subway']|length + times['Bus']|length))-2}}vh;
 			justify-content: center;
 			flex-direction: column;
@@ -41,8 +41,8 @@
 		.box {
 			display: flex;
 			align-self: center;
-			height: {{(100/(times['Subway']|length + times['Bus']|length))-2}}vmin;
-			width: {{(100/(times['Subway']|length + times['Bus']|length))-2}}vmin;
+			height: {{(100/(times['Subway']|length + times['Bus']|length))-5}}vmin;
+			width: {{(100/(times['Subway']|length + times['Bus']|length))-5}}vmin;
 			border-radius: 50%;
 			background-color: #11117D;
 			justify-content: center;
@@ -52,7 +52,7 @@
 		.text {
 			display: flex;
 			float: left;
-			width: 70vw;
+			width: 75vw;
 			height: {{(100/(times['Subway']|length + times['Bus']|length))-2}}vh;
 			color: white;
 			justify-content: center;
@@ -64,7 +64,7 @@
 		.bus_lines {
 			display: flex;
 			float: left;
-			width: 20vw;
+			width: 15vw;
 			height: {{(100/(times['Subway']|length + times['Bus']|length))-2}}vh;
 			color: white;
 			justify-content: center;
@@ -82,7 +82,7 @@
 
 		.line_name {
 			font-weight: bold;
-			font-size: 12vmin;
+			font-size: 10vmin;
 			background-color: #11117D;
 			padding-left: 1vw;
 			padding-right: 1vw;
@@ -91,7 +91,7 @@
 		}
 
 		.subway_logo {
-			font-size: 16vmin;
+			font-size: 14vmin;
 			font-family: sans-serif;
 			color: white;
 			margin: 0;
