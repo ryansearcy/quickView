@@ -174,9 +174,12 @@ def fetchTransitTimes(apiURI: str, lineData: dict, minMaxAway: dict):
             arrivalTimes[routeID][stopID].append(minutesAway)
     for line in arrivalTimes:
         for stop in arrivalTimes[line]:
-            if len(arrivalTimes[line][stop]) == 0:
+            timesLength: int = len(arrivalTimes[line][stop])
+            if  timesLength == 0:
                 arrivalTimes[line][stop] = 'No Departure Times Available'
             else:
+                if timesLength > 4:
+                    arrivalTimes[line][stop] = arrivalTimes[line][stop][:4]
                 arrivalTimes[line][stop].sort()
                 arrivalTimes[line][stop] = ', '.join([str(times) for times in arrivalTimes[line][stop]])
             arrivalTimes[line][stop] = 'To ' + lineData[line][stop] + ':<br>' + arrivalTimes[line][stop]
