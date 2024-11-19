@@ -39,6 +39,7 @@
             background-color: black;
             margin: 0;
         }
+
         .covers {
             width: 100vw;
             height: 65vh;
@@ -47,6 +48,7 @@
             flex-direction: column;
             margin-top: 5vh;
         }
+
         .column {
             width: 100vw;
             height: 25vh;
@@ -71,12 +73,12 @@
             animation: scroll-rtl 20s linear infinite;
             position: relative;
             padding-inline: 1rem;
-            font-size: 12vmin;
+            font-size: 8vmin;
             margin: 0;
         }
 
         .title {
-            font-size: 12vmin;
+            font-size: 8vmin;
             text-align: center;
             width: 100vw;
             margin: 0;
@@ -98,7 +100,7 @@
             animation: scroll-rtl 20s linear infinite;
             position: relative;
             padding-inline: 1rem;
-            font-size: 7vmin;
+            font-size: 5vmin;
             font-style: italic;
             margin: 0;
         }
@@ -106,7 +108,7 @@
         .artist {
             text-align: center;
             width: 100vw;
-            font-size: 7vmin;
+            font-size: 5vmin;
             font-style: italic;
             margin: 0;
         }
@@ -130,6 +132,7 @@
             object-fit: contain;
         }
     </style>
+
     <body>
         <div class="covers" id="art"><img id='cover_art' src={{ cover_art }} alt="cover art"></div>
         <div class="column" id="titles">

@@ -38,6 +38,17 @@
 			margin-left: 5vw;
 		}
 
+		.box {
+			display: flex;
+			align-self: center;
+			height: {{(100/(times['Subway']|length + times['Bus']|length))-2}}vmin;
+			width: {{(100/(times['Subway']|length + times['Bus']|length))-2}}vmin;
+			border-radius: 50%;
+			background-color: #11117D;
+			justify-content: center;
+			align-items: center;
+		}
+
 		.text {
 			display: flex;
 			float: left;
@@ -80,14 +91,17 @@
 		}
 
 		.subway_logo {
-			height: 100%;
-			object-fit: contain;
+			font-size: 16vmin;
+			font-family: sans-serif;
+			color: white;
 			margin: 0;
+			text-align: center;
+			font-weight: bold;
 		}
 
 		.times {
 			padding-left: 1vw;
-			font-size: 7vmin;
+			font-size: 6vmin;
 			margin: 0;
 			text-align: center;
 			vertical-align: middle;
@@ -98,7 +112,9 @@
 		<div class="row">
 			{% for line in times['Subway'] %}
 			<div class="logo">
-				<img class='subway_logo' src="static/logos/{{line}}.png">
+				<div class="box">
+					<p class='subway_logo'>{{ line }}</p>
+				</div>
 			</div>
 			{% for stop in times['Subway'][line] %}
 			{% set split_times = times['Subway'][line][stop].split("<br>") %}
