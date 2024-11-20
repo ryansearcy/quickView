@@ -98,7 +98,7 @@ def refreshAuthToken() -> None:
     formData = {'refresh_token': refreshToken, 'grant_type':'refresh_token'}
     headers = {'Authorization': 'Basic ' + base64.b64encode((clientID + ':' +clientSecret).encode('ascii')).decode('ascii')}
     authResponse = requests.post('https://accounts.spotify.com/api/token', data=formData, headers=headers).json()
-    quickView.logger.debug('Refresh data: ' + authResponse.__str__())
+    #quickView.logger.debug('Refresh data: ' + authResponse.__str__())
     setGlobalVariable('accessToken', authResponse['access_token'])
     if 'refresh_token' in authResponse:
         setGlobalVariable('refresh_token', authResponse['refresh_token'])
@@ -110,10 +110,10 @@ def getSpotifyPlaybackData() -> dict:
         return {'status_code': 400, 'is_playing': False}
     if expiresAt <= datetime.today():
         refreshAuthToken()
-    quickView.logger.debug('accessToken Value: ' + accessToken)
+    #quickView.logger.debug('accessToken Value: ' + accessToken)
     playbackHeaders: dict = {'Authorization':'Bearer ' + accessToken}
     playbackInfo: Response = requests.get('https://api.spotify.com/v1/me/player', headers=playbackHeaders)
-    quickView.logger.debug('Playback State Response Code: ' + playbackInfo.status_code.__str__())
+    #quickView.logger.debug('Playback State Response Code: ' + playbackInfo.status_code.__str__())
     if playbackInfo.status_code == 200:
         playbackData = playbackInfo.json()
         quickView.logger.debug('Device ID: ' + playbackData['device']['id'])
@@ -133,11 +133,11 @@ def getSpotifyPlaybackData() -> dict:
 @quickView.route("/playback-data")
 def getPlaybackState() -> dict:
     playbackData = getSpotifyPlaybackData()
-    quickView.logger.debug('Currently Playing?: ' + playbackData['is_playing'].__str__())
+    #quickView.logger.debug('Currently Playing?: ' + playbackData['is_playing'].__str__())
     return json.dumps(playbackData)
 
 @quickView.route("/spotify")
-def displayPlaybackData():
+def displayPlaybackData() -> Response:
     if checkForEmptyGlobalVariables(spotifyTokenVariables):
         return redirect(url_for('genAuthCode'))
     playbackData = getSpotifyPlaybackData()
@@ -145,8 +145,35 @@ def displayPlaybackData():
         return render_template('spotify.html', title=playbackData['name'], artists=playbackData['artists'], cover_art=playbackData['cover_art'])
     else:
         return redirect(url_for('realtimeTransit'))
+    
+@quickView.route("/previous-song")
+def previousSong():
+    previousSuccess = requests.post('https://api.spotify.com/v1/me/player/previous', headers={'Authorization':'Bearer ' + accessToken})
+    if previousSuccess.status_code == 204:
+        quickView.logger.debug('Successfully went to previous')
+    else:
+        quickView.logger.debug('Error when previous: ' + previousSuccess.status_code.__str__())
+    return {'status': previousSuccess.status_code}
 
-def fetchTransitTimes(apiURI: str, lineData: dict, minMaxAway: dict):
+@quickView.get("/pause-song")
+def pauseSong():
+    pauseSuccess = requests.put('https://api.spotify.com/v1/me/player/pause', headers={'Authorization':'Bearer ' + accessToken})
+    if pauseSuccess.status_code == 204:
+        quickView.logger.debug('Successfully Paused')
+    else:
+        quickView.logger.debug('Error when pausing: ' + pauseSuccess.status_code.__str__())
+    return {'status': pauseSuccess.status_code}
+
+@quickView.route("/next-song")
+def nextSong():
+    nextSuccess = requests.post('https://api.spotify.com/v1/me/player/next', headers={'Authorization':'Bearer ' + accessToken})
+    if nextSuccess.status_code == 204:
+        quickView.logger.debug('Successfully went to previous')
+    else:
+        quickView.logger.debug('Error when previous: ' + nextSuccess.status_code.__str__())
+    return {'status': nextSuccess.status_code}
+
+def fetchTransitTimes(apiURI: str, lineData: dict, minMaxAway: dict) -> dict:
     transitFeed = gtfs_realtime_pb2.FeedMessage()
     transitTimes = requests.get(apiURI)
     transitFeed.ParseFromString(transitTimes.content)
@@ -186,15 +213,15 @@ def fetchTransitTimes(apiURI: str, lineData: dict, minMaxAway: dict):
     return arrivalTimes
 
 @quickView.route("/realtime-transit")
-def realtimeTransit():
+def realtimeTransit() -> str:
     if checkForEmptyGlobalVariables(spotifyTokenVariables):
         return redirect(url_for('genAuthCode'))
     transitTimes = {'Subway': fetchTransitTimes(mtaAPIURIs['Subway'], subwayData, subwayMinMaxAway), 'Bus': fetchTransitTimes(mtaAPIURIs['Bus'], busData, busMinMaxAway)}
-    quickView.logger.debug('Successfully fetched transit times')
+    #quickView.logger.debug('Successfully fetched transit times')
     return render_template('transit.html', times=transitTimes, keep_trailing_newline=True)
 
 @quickView.get("/transit-times")
-def fetchTimes():
+def fetchTimes() -> str:
     transitTimes = {'Subway': fetchTransitTimes(mtaAPIURIs['Subway'], subwayData, subwayMinMaxAway), 'Bus': fetchTransitTimes(mtaAPIURIs['Bus'], busData, busMinMaxAway)}
-    quickView.logger.debug('Transit Times: ' + json.dumps(transitTimes))
+    #quickView.logger.debug('Transit Times: ' + json.dumps(transitTimes))
     return json.dumps(transitTimes)
