@@ -5,6 +5,9 @@ from datetime import timedelta, datetime
 from google.transit import gtfs_realtime_pb2
 from typing import Any
 from selenium import webdriver
+from selenium.webdriver.firefox.options import Options
+from selenium.webdriver.firefox.service import Service as FirefoxService
+from webdriver_manager.firefox import GeckoDriverManager
 
 quickView = Flask(__name__)
 
@@ -133,9 +136,9 @@ def genAuthCode() -> Response:
     if checkForEmptyGlobalVariables(apiVariables):
         return redirect(url_for('startSetup'))
     state: str = genRandomString(16)
-    #webbrowser.open('https://accounts.spotify.com/authorize?' + f'response_type=code&client_id={clientID}&scope={appScope}&redirect_uri={redirectUri}&state={state}', 2, False)
-    firefoxOptions = webdriver.FirefoxOptions().add_argument("--headless")
-    firefoxDriver = webdriver.Firefox(options=firefoxOptions)
+    firefoxOptions = Options()
+    firefoxOptions.add_argument('-headless')
+    firefoxDriver = webdriver.Firefox(service=FirefoxService(GeckoDriverManager().install()), options=firefoxOptions)
     firefoxDriver.get('https://accounts.spotify.com/authorize?' + f'response_type=code&client_id={clientID}&scope={appScope}&redirect_uri={redirectUri}&state={state}')
     spotifyUsernameInput = firefoxDriver.find_element(value='login-username')
     spotifyUsernameInput.send_keys(spotifyUsername)
@@ -144,7 +147,7 @@ def genAuthCode() -> Response:
     firefoxDriver.find_element(value='login-button').click()
     while checkForEmptyGlobalVariables('accessToken'):
         time.sleep(1)
-    firefoxDriver.close()
+    firefoxDriver.quit()
     return redirect(url_for('displayPlaybackData'))
 
 @quickView.route("/setup")
