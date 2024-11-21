@@ -1,9 +1,10 @@
 from flask import Flask, Response, request, redirect, render_template, url_for
-import string, random, base64, requests, json
+import string, random, base64, requests, json, time
 from json import JSONDecodeError
 from datetime import timedelta, datetime
 from google.transit import gtfs_realtime_pb2
 from typing import Any
+from selenium import webdriver
 
 quickView = Flask(__name__)
 
@@ -15,12 +16,15 @@ emptyString: str = ''
 emptyTypes: dict[type, Any] = {str: emptyString, list: [], dict: {}, datetime: datetime.today()}
 
 #Spotify API variables
-spotifyAPIVariables: list[str] = ['clientID', 'clientSecret', 'appScope', 'redirectUri', 'deviceID']
+spotifyAPIVariables: list[str] = ['clientID', 'clientSecret', 'appScope', 'redirectUri', 'deviceID', 'spotifyUsername', 'spotifyPassword']
 clientID: str = emptyTypes[str]
 clientSecret: str = emptyTypes[str]
+authCode: str = emptyTypes[str]
 appScope: str = emptyTypes[str]
 redirectUri: str = emptyTypes[str]
 deviceID: str = emptyTypes[str]
+spotifyUsername = emptyTypes[str]
+spotifyPassword = emptyTypes[str]
 #Spotify Token Variables
 spotifyTokenVariables: list[str] = ['accessToken', 'refreshToken', 'expiresAt']
 accessToken: str = emptyTypes[str]
@@ -35,79 +39,131 @@ busData: dict[Line, dict[StopID, TripID]] = emptyTypes[dict]
 busMinMaxAway: dict[str, dict[str, int]] = emptyTypes[dict]
 mtaAPIURIs: dict[str, str] = emptyTypes[dict]
 
-appVariables: list[str] = spotifyAPIVariables + spotifyTokenVariables + transitVariables
-appVariablesSet: set[str] = set(appVariables)
+apiVariables: list[str] = emptyTypes[list]
+appVariables: list[str] = spotifyAPIVariables + spotifyTokenVariables + transitVariables + ['apiVariables']
 
 def checkForEmptyGlobalVariables(variableNames: list[str] | str) -> bool:
     if type(variableNames) == str:
         variables = [variableNames]
     else:
         variables = variableNames
-    if set(variables).issubset(appVariablesSet) is False:
+    if set(variables).issubset(set(appVariables)) is False:
         raise ValueError('variables are not in editable global scope')
     globalVars = globals()
     return [globalVars[v] == emptyTypes[type(globalVars[v])] for v in variables].__contains__(True)
 
-def setGlobalVariable(variableName: str | list[str], value: Any) -> None:
+def setGlobalVariable(variableName: str | list[str], value: Any, writeToJSON: bool=False) -> None:
     if type(variableName) == str:
         globalVariables = globals()
         if variableName not in appVariables:
             raise ValueError('Variable does not exist in editable scope')
         if type(globalVariables[variableName]) != type(value):
+            quickView.logger.debug('globalVariable type is ' + type(globalVariables[variableName]).__name__ + ' while value type is ' + type(value).__name__)
             raise ValueError('Value type does not match variable')
         globals()[variableName] = value
+        if writeToJSON:
+            writeJSONVariables({variableName: value})
     else:
         for v in variableName:
             setGlobalVariable(v, value)
+        if writeToJSON:
+            writeJSONVariables({v: value for v in variableName})
     return
 
-def loadJSONVariables(name: str) -> None:
-    jsonFile = open("variableData/" + name + ".json", "r")
-    jsonData = json.load(jsonFile)
-    for variable in jsonData:
-        setGlobalVariable(variable, jsonData[variable])
+def loadJSONVariables() -> None:
+    try:
+        jsonFile = open("config.json", "r")
+        try:
+            jsonData = json.load(jsonFile)
+            for variable in jsonData:
+                setGlobalVariable(variable, jsonData[variable], False)
+        except JSONDecodeError:
+            jsonFile.close()
+            return
+    except:
+        jsonFile = open("config.json", "x")
+    jsonFile.close()
+    return
+
+def writeJSONVariables(variables: dict[str, Any]) -> None:
+    jsonFile = open("config.json", "r")
+    try:
+        jsonData = json.load(jsonFile)
+    except JSONDecodeError:
+        jsonData = emptyTypes[dict]
+    jsonFile.close()
+    for v in variables:
+        jsonData[v] = variables[v]
+    jsonFile = open("config.json", "w")
+    jsonFile.write(json.dumps(jsonData))
+    jsonFile.close()
     return
 
 def genRandomString(length: int) -> str:
     letters = string.ascii_letters + string.digits
     return emptyString.join(random.choice(letters) for i in range(length))
 
+def fetchAuthToken(authCode: int) -> int:
+    formData = {'code': authCode, 'redirect_uri': redirectUri, 'grant_type':'authorization_code'}
+    headers = {'Content-Type':'application/x-www-form-urlencoded', 'Authorization': 'Basic ' + base64.b64encode((clientID + ':' +clientSecret).encode('ascii')).decode('ascii')}
+    authResponse = requests.post('https://accounts.spotify.com/api/token', data=formData, headers=headers)
+    if authResponse.status_code == 200:
+        authJSON = authResponse.json()
+        setGlobalVariable('accessToken', authJSON['access_token'])
+        setGlobalVariable('refreshToken', authJSON['refresh_token'])
+        setGlobalVariable('expiresAt', datetime.today() + timedelta(seconds=(round(authJSON['expires_in']*0.75))))
+    return authResponse.status_code
+
+def refreshAuthToken() -> int:
+    formData = {'refresh_token': refreshToken, 'grant_type':'refresh_token'}
+    headers = {'Authorization': 'Basic ' + base64.b64encode((clientID + ':' +clientSecret).encode('ascii')).decode('ascii')}
+    authResponse = requests.post('https://accounts.spotify.com/api/token', data=formData, headers=headers)
+    if authResponse.status_code == 200:
+        authJSON = authResponse.json()
+        #quickView.logger.debug('Refresh data: ' + authJSON.__str__())
+        setGlobalVariable('accessToken', authJSON['access_token'])
+        if 'refresh_token' in authJSON:
+            setGlobalVariable('refresh_token', authJSON['refresh_token'])
+        setGlobalVariable('expiresAt', datetime.today() + timedelta(seconds=(round(authJSON['expires_in']*0.75))))
+    return authResponse.status_code
+
 @quickView.route("/")
 def genAuthCode() -> Response:
-    loadJSONVariables('spotifyVariables')
-    loadJSONVariables('transitVariables')
+    loadJSONVariables()
+    if checkForEmptyGlobalVariables(apiVariables):
+        return redirect(url_for('startSetup'))
     state: str = genRandomString(16)
-    return redirect('https://accounts.spotify.com/authorize?' + f'response_type=code&client_id={clientID}&scope={appScope}&redirect_uri={redirectUri}&state={state}')
+    #webbrowser.open('https://accounts.spotify.com/authorize?' + f'response_type=code&client_id={clientID}&scope={appScope}&redirect_uri={redirectUri}&state={state}', 2, False)
+    firefoxOptions = webdriver.FirefoxOptions().add_argument("--headless")
+    firefoxDriver = webdriver.Firefox(options=firefoxOptions)
+    firefoxDriver.get('https://accounts.spotify.com/authorize?' + f'response_type=code&client_id={clientID}&scope={appScope}&redirect_uri={redirectUri}&state={state}')
+    spotifyUsernameInput = firefoxDriver.find_element(value='login-username')
+    spotifyUsernameInput.send_keys(spotifyUsername)
+    spotifyPasswordInput = firefoxDriver.find_element(value='login-password')
+    spotifyPasswordInput.send_keys(spotifyPassword)
+    firefoxDriver.find_element(value='login-button').click()
+    while checkForEmptyGlobalVariables('accessToken'):
+        time.sleep(1)
+    firefoxDriver.close()
+    return redirect(url_for('displayPlaybackData'))
+
+@quickView.route("/setup")
+def startSetup() -> None:
+    return
 
 @quickView.route("/callback")
 def genAuthToken() -> Response:
-    authCode: str = request.args.get('code')
+    authCode = request.args.get('code')
     state = request.args.get('state')
     if state is None:
         quickView.logger.debug('Returned State is null')
         return "<h1>Error: state is null</h1>"
-    formData = {'code': authCode, 'redirect_uri': redirectUri, 'grant_type':'authorization_code'}
-    headers = {'Content-Type':'application/x-www-form-urlencoded', 'Authorization': 'Basic ' + base64.b64encode((clientID + ':' +clientSecret).encode('ascii')).decode('ascii')}
-    authResponse = requests.post('https://accounts.spotify.com/api/token', data=formData, headers=headers).json()
-    setGlobalVariable('accessToken', authResponse['access_token'])
-    setGlobalVariable('refreshToken', authResponse['refresh_token'])
-    setGlobalVariable('expiresAt', datetime.today() + timedelta(seconds=(round(authResponse['expires_in']*0.75))))
-    return redirect('/spotify')
-
-def refreshAuthToken() -> None:
-    formData = {'refresh_token': refreshToken, 'grant_type':'refresh_token'}
-    headers = {'Authorization': 'Basic ' + base64.b64encode((clientID + ':' +clientSecret).encode('ascii')).decode('ascii')}
-    authResponse = requests.post('https://accounts.spotify.com/api/token', data=formData, headers=headers).json()
-    #quickView.logger.debug('Refresh data: ' + authResponse.__str__())
-    setGlobalVariable('accessToken', authResponse['access_token'])
-    if 'refresh_token' in authResponse:
-        setGlobalVariable('refresh_token', authResponse['refresh_token'])
-    setGlobalVariable('expiresAt', datetime.today() + timedelta(seconds=(round(authResponse['expires_in']*0.75))))
-    return
+    fetchAuthToken(authCode)
+    return redirect(url_for('displayPlaybackData'))
 
 def getSpotifyPlaybackData() -> dict:
     if checkForEmptyGlobalVariables('accessToken'):
-        return {'status_code': 400, 'is_playing': False}
+        return {'status_code': 401, 'is_playing': False}
     if expiresAt <= datetime.today():
         refreshAuthToken()
     #quickView.logger.debug('accessToken Value: ' + accessToken)
