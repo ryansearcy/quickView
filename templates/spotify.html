@@ -1,4 +1,4 @@
-<!doctype=html>
+<!DOCTYPE html>
     <script type='text/javascript'>
         function previous() {
             fetch("/previous-song")
@@ -7,7 +7,6 @@
             fetch("/next-song")
         }
         function pause() {
-            console.log("called pause function")
             fetch("/pause-song")
         }
         function fetchUpdates() {
@@ -16,7 +15,9 @@
                 if (!spotify_data["is_playing"]) {
                     window.location.replace("/realtime-transit")
                 }
-                if (spotify_data["name"] != document.getElementById('song_title').innerHTML) {
+                const parser = new DOMParser();
+                dom = parser.parseFromString("<p id=\"name\">" + spotify_data["name"] + "</p>", "text/html")
+                if (dom.getElementById('name').innerHTML != document.getElementById('song_title').innerHTML) {
                     document.getElementById('song_title').className = 'title'
                     document.getElementById('artists').className = 'artist'
                     document.getElementById('song_title').innerHTML = spotify_data["name"]
@@ -24,19 +25,31 @@
                     document.getElementById('artists').innerHTML = spotify_data["artists"]
                     if (document.getElementById('song_title').clientWidth < document.getElementById('song_title').scrollWidth) {
                         document.getElementById('song_title').className = 'scroll_title'
+                        document.getElementById('song_title').style.animation = "scroll-rtl " + (document.getElementById('song_title').innerText.length/5) + "s linear infinite"
+                    }
+                    else {
+                        document.getElementById('song_title').style.animation = ""
                     }
                     if (document.getElementById('artists').clientWidth < document.getElementById('artists').scrollWidth) {
                         document.getElementById('artists').className = 'scroll_artist'
+                        document.getElementById('artists').style.animation = "scroll-rtl " + (document.getElementById('artists').innerText.length/5) + "s linear infinite"
+                    }
+                    else {
+                        document.getElementById('artists').style.animation = ""
                     }
                 }
             });
         }
         function checkWidth() {
+            console.log('clientWidth: ' + document.getElementById('song_title').clientWidth)
+            console.log(document.getElementById('song_title').scrollWidth)
             if (document.getElementById('song_title').clientWidth < document.getElementById('song_title').scrollWidth) {
                 document.getElementById('song_title').className = 'scroll_title'
+                document.getElementById('song_title').style.animation = "scroll-rtl " + (document.getElementById('song_title').innerText.length/5) + "s linear infinite"
             }
             if (document.getElementById('artists').clientWidth < document.getElementById('artists').scrollWidth) {
                 document.getElementById('artists').className = 'scroll_artist'
+                document.getElementById('artists').style.animation = "scroll-rtl " + (document.getElementById('artists').innerText.length/5) + "s linear infinite"
             }
         }
         window.addEventListener("load", myInit, true); function myInit() {
@@ -47,80 +60,78 @@
     <style>
         body {
             background-color: black;
-            margin: 0;
         }
 
         .covers {
-            width: 100vw;
             height: 60vh;
             justify-content: center;
             align-items: center;
             flex-direction: column;
-            margin-top: 2.5vh;
+            padding-top: 2vh;
         }
 
         .column {
-            width: 100vw;
-            height: 20vh;
+            height: 18vh;
             justify-content: center;
             align-items: center;
             flex-direction: column;
         }
 
         .title_text {
-            width: 100vw;
+            display: flex;
             white-space: nowrap;
             overflow: hidden;
             box-sizing: border-box;
             position: relative;
-            margin-top: 5vh;
-            margin-right: 1vw;
+            margin-top: 3vh;
+            margin-left: 4vw;
+            margin-right: 4vw;
             color: white;
+            align-items: center;
         }
 
         .scroll_title {
             display: inline-block;
             animation: scroll-rtl 20s linear infinite;
             position: relative;
-            padding-inline: 1rem;
-            font-size: 10vmin;
-            margin: 0;
+            font-size: 11vmin;
+            margin: 0 1vw;
         }
 
         .title {
-            font-size: 10vmin;
+            font-size: 11vmin;
             text-align: center;
-            width: 100vw;
-            margin: 0;
+            margin: 0 1vw;
+            width: 90vw;
         }
 
         .artist_text {
-            width: 100vw;
+            display: flex;
             white-space: nowrap;
             overflow: hidden;
             box-sizing: border-box;
             position: relative;
-            margin-top: 1vh;
-            margin-right: 1vw;
+            margin-top: 1.5vh;
+            margin-left: 4vw;
+            margin-right: 4vw;
             color: white;
         }
 
         .scroll_artist {
             display: inline-block;
-            animation: scroll-rtl 20s linear infinite;
+            animation: scroll-rtl 10s linear infinite;
             position: relative;
-            padding-inline: 1rem;
-            font-size: 6vmin;
+            font-size: 6.5vmin;
             font-style: italic;
-            margin: 0;
+            margin: 0 1vw;
         }
 
         .artist {
+            width: 90vw;
             text-align: center;
-            width: 100vw;
-            font-size: 6vmin;
+            font-size: 6.5vmin;
             font-style: italic;
-            margin: 0;
+            margin: 0 1vw;
         }
 
         @keyframes scroll-rtl {
@@ -144,11 +155,11 @@
 
         .playback_buttons {
             display: flex;
-            float: left;
+            float: center;
             justify-content: center;
             align-items: center;
-            width: 100vw;
             height: 8vh;
+            margin-top: 5vh;
         }
 
         .playback {
@@ -156,7 +167,7 @@
             float: left;
             justify-content: center;
             align-items: center;
-            width: 30vw;
+            width: 25vw;
             height: 6vh;
         }
 
@@ -176,13 +187,12 @@
         }
     </style>
 
-    <body>
         <div class="covers" id="art"><img id='cover_art' src={{ cover_art }} alt="cover art"></div>
         <div class="column" id="titles">
-            <div class="title_text">
+            <div class="title_text" id="title_text">
                 <p id='song_title' class="title">{{ title }}</p>
             </div>
-            <div class="artist_text">
+            <div class="artist_text" id="artist_text">
                 <p id='artists' class="artist">{{ artists }}</p>
             </div>
         </div>

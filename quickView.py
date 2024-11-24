@@ -262,7 +262,7 @@ def fetchTransitTimes(apiURI: str, lineData: dict, minMaxAway: dict) -> dict:
         for stop in arrivalTimes[line]:
             timesLength: int = len(arrivalTimes[line][stop])
             if  timesLength == 0:
-                arrivalTimes[line][stop] = 'No Departure Times Available'
+                arrivalTimes[line][stop] = 'No Departures'
             else:
                 if timesLength > 4:
                     arrivalTimes[line][stop] = arrivalTimes[line][stop][:4]
