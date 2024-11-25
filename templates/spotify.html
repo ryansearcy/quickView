@@ -15,9 +15,7 @@
                 if (!spotify_data["is_playing"]) {
                     window.location.replace("/realtime-transit")
                 }
-                const parser = new DOMParser();
-                dom = parser.parseFromString("<p id=\"name\">" + spotify_data["name"] + "</p>", "text/html")
-                if (dom.getElementById('name').innerHTML != document.getElementById('song_title').innerHTML) {
+                if (spotify_data["name"] != document.getElementById('song_title').innerText) {
                     document.getElementById('song_title').className = 'title'
                     document.getElementById('artists').className = 'artist'
                     document.getElementById('song_title').innerHTML = spotify_data["name"]
@@ -25,14 +23,14 @@
                     document.getElementById('artists').innerHTML = spotify_data["artists"]
                     if (document.getElementById('song_title').clientWidth < document.getElementById('song_title').scrollWidth) {
                         document.getElementById('song_title').className = 'scroll_title'
-                        document.getElementById('song_title').style.animation = "scroll-rtl " + (document.getElementById('song_title').innerText.length/5) + "s linear infinite"
+                        document.getElementById('song_title').style.animation = "scroll-rtl " + (document.getElementById('song_title').innerText.length/3.5) + "s linear infinite"
                     }
                     else {
                         document.getElementById('song_title').style.animation = ""
                     }
                     if (document.getElementById('artists').clientWidth < document.getElementById('artists').scrollWidth) {
                         document.getElementById('artists').className = 'scroll_artist'
-                        document.getElementById('artists').style.animation = "scroll-rtl " + (document.getElementById('artists').innerText.length/5) + "s linear infinite"
+                        document.getElementById('artists').style.animation = "scroll-rtl " + (document.getElementById('artists').innerText.length/3.5) + "s linear infinite"
                     }
                     else {
                         document.getElementById('artists').style.animation = ""
@@ -45,11 +43,11 @@
             console.log(document.getElementById('song_title').scrollWidth)
             if (document.getElementById('song_title').clientWidth < document.getElementById('song_title').scrollWidth) {
                 document.getElementById('song_title').className = 'scroll_title'
-                document.getElementById('song_title').style.animation = "scroll-rtl " + (document.getElementById('song_title').innerText.length/5) + "s linear infinite"
+                document.getElementById('song_title').style.animation = "scroll-rtl " + (document.getElementById('song_title').innerText.length/3.5) + "s linear infinite"
             }
             if (document.getElementById('artists').clientWidth < document.getElementById('artists').scrollWidth) {
                 document.getElementById('artists').className = 'scroll_artist'
-                document.getElementById('artists').style.animation = "scroll-rtl " + (document.getElementById('artists').innerText.length/5) + "s linear infinite"
+                document.getElementById('artists').style.animation = "scroll-rtl " + (document.getElementById('artists').innerText.length/3.5) + "s linear infinite"
             }
         }
         window.addEventListener("load", myInit, true); function myInit() {
@@ -135,14 +133,14 @@
         }
 
         @keyframes scroll-rtl {
-            20% {
+            30% {
                 transform: translate(0, 0);
                 left: 0%;
             }
 
-            80%,
+            75%,
             100% {
-                transform: translate(-100%, 0);
+                transform: translate(-105%, 0);
                 left: 100%;
             }
         }
@@ -181,12 +179,13 @@
         }
 
         .button_img {
-            width: 10vw;
+            width: 8vw;
             height: 6vh;
-            object-fit:contain;
+            object-fit: contain;
         }
     </style>
 
+    <body>
         <div class="covers" id="art"><img id='cover_art' src={{ cover_art }} alt="cover art"></div>
         <div class="column" id="titles">
             <div class="title_text" id="title_text">
