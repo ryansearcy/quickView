@@ -1,209 +1,235 @@
 <!DOCTYPE html>
-    <script type='text/javascript'>
-        function previous() {
-            fetch("/previous-song")
-        }
-        function next() {
-            fetch("/next-song")
-        }
-        function pause() {
-            fetch("/pause-song")
-        }
-        function fetchUpdates() {
-            fetch("/playback-data").then((response) => response.json()).then((result) => {
-                var spotify_data = JSON.parse(JSON.stringify(result))
-                if (!spotify_data["is_playing"]) {
-                    window.location.replace("/realtime-transit")
+<script type='text/javascript'>
+    function previous() {
+        fetch("/previous-song")
+    }
+    function next() {
+        fetch("/next-song")
+    }
+    function pause() {
+        fetch("/pause-song")
+    }
+    function fetchUpdates() {
+        fetch("/playback-data").then((response) => response.json()).then((result) => {
+            var spotify_data = JSON.parse(JSON.stringify(result))
+            if (!spotify_data["is_playing"]) {
+                window.location.replace("/realtime-transit")
+            }
+            if (spotify_data["name"] != document.getElementById('song_title').innerText) {
+                document.getElementById('song_title').className = 'title'
+                document.getElementById('artists').className = 'artist'
+                document.getElementById('song_title').innerHTML = spotify_data["name"]
+                document.getElementById('cover_art').setAttribute("src", spotify_data["cover_art"])
+                document.getElementById('artists').innerHTML = spotify_data["artists"]
+                if (document.getElementById('song_title').clientWidth < document.getElementById('song_title').scrollWidth) {
+                    document.getElementById('song_title').className = 'scroll_title'
+                    document.getElementById('song_title').style.animation = "scroll-rtl " + (document.getElementById('song_title').innerText.length / 3.5) + "s linear infinite"
                 }
-                if (spotify_data["name"] != document.getElementById('song_title').innerText) {
-                    document.getElementById('song_title').className = 'title'
-                    document.getElementById('artists').className = 'artist'
-                    document.getElementById('song_title').innerHTML = spotify_data["name"]
-                    document.getElementById('cover_art').setAttribute("src", spotify_data["cover_art"])
-                    document.getElementById('artists').innerHTML = spotify_data["artists"]
-                    if (document.getElementById('song_title').clientWidth < document.getElementById('song_title').scrollWidth) {
-                        document.getElementById('song_title').className = 'scroll_title'
-                        document.getElementById('song_title').style.animation = "scroll-rtl " + (document.getElementById('song_title').innerText.length/3.5) + "s linear infinite"
-                    }
-                    else {
-                        document.getElementById('song_title').style.animation = ""
-                    }
-                    if (document.getElementById('artists').clientWidth < document.getElementById('artists').scrollWidth) {
-                        document.getElementById('artists').className = 'scroll_artist'
-                        document.getElementById('artists').style.animation = "scroll-rtl " + (document.getElementById('artists').innerText.length/3.5) + "s linear infinite"
-                    }
-                    else {
-                        document.getElementById('artists').style.animation = ""
-                    }
+                else {
+                    document.getElementById('song_title').style.animation = ""
                 }
-            });
-        }
-        function checkWidth() {
-            console.log('clientWidth: ' + document.getElementById('song_title').clientWidth)
-            console.log(document.getElementById('song_title').scrollWidth)
-            if (document.getElementById('song_title').clientWidth < document.getElementById('song_title').scrollWidth) {
-                document.getElementById('song_title').className = 'scroll_title'
-                document.getElementById('song_title').style.animation = "scroll-rtl " + (document.getElementById('song_title').innerText.length/3.5) + "s linear infinite"
+                if (document.getElementById('artists').clientWidth < document.getElementById('artists').scrollWidth) {
+                    document.getElementById('artists').className = 'scroll_artist'
+                    document.getElementById('artists').style.animation = "scroll-rtl " + (document.getElementById('artists').innerText.length / 3.5) + "s linear infinite"
+                }
+                else {
+                    document.getElementById('artists').style.animation = ""
+                }
             }
-            if (document.getElementById('artists').clientWidth < document.getElementById('artists').scrollWidth) {
-                document.getElementById('artists').className = 'scroll_artist'
-                document.getElementById('artists').style.animation = "scroll-rtl " + (document.getElementById('artists').innerText.length/3.5) + "s linear infinite"
-            }
+        });
+    }
+    function checkWidth() {
+        console.log('clientWidth: ' + document.getElementById('song_title').clientWidth)
+        console.log(document.getElementById('song_title').scrollWidth)
+        if (document.getElementById('song_title').clientWidth < document.getElementById('song_title').scrollWidth) {
+            document.getElementById('song_title').className = 'scroll_title'
+            document.getElementById('song_title').style.animation = "scroll-rtl " + (document.getElementById('song_title').innerText.length / 3.5) + "s linear infinite"
         }
-        window.addEventListener("load", myInit, true); function myInit() {
-            checkWidth();
-            setInterval(fetchUpdates, 1000);
+        if (document.getElementById('artists').clientWidth < document.getElementById('artists').scrollWidth) {
+            document.getElementById('artists').className = 'scroll_artist'
+            document.getElementById('artists').style.animation = "scroll-rtl " + (document.getElementById('artists').innerText.length / 3.5) + "s linear infinite"
         }
-    </script>
-    <style>
-        body {
-            background-color: black;
+    }
+    function startTime() {
+        const today = new Date();
+        let h = today.getHours();
+        let m = today.getMinutes();
+        let s = today.getSeconds();
+        m = checkTime(m);
+        s = checkTime(s);
+        document.getElementById('time').innerHTML = h + ":" + m + ":" + s;
+        setTimeout(startTime, 1000);
+    }
+    function checkTime(i) {
+        if (i < 10) { i = "0" + i };  // add zero in front of numbers < 10
+        return i;
+    }
+    window.addEventListener("load", myInit, true); function myInit() {
+        startTime();
+        checkWidth();
+        setInterval(fetchUpdates, 1000);
+    }
+</script>
+<style>
+    body {
+        background-color: black;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .clock {
+        flex: 10;
+        color: white;
+        align-self: center;
+        font-size: 5vmin;
+    }
+
+    #time {
+        margin: 0;
+    }
+
+    .covers {
+        flex: 8;
+        display: flex;
+        width: 100%;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .column {
+        display: flex;
+        align-items: center;
+        flex-direction: column;
+        flex: 90;
+    }
+
+    .title_text {
+        flex: 5;
+        white-space: nowrap;
+        overflow: hidden;
+        box-sizing: border-box;
+        position: relative;
+        margin-left: 4vw;
+        margin-right: 4vw;
+        color: white;
+        align-items: center;
+    }
+
+    .scroll_title {
+        display: inline-block;
+        animation: scroll-rtl 20s linear infinite;
+        position: relative;
+        font-size: 11vmin;
+        margin: 0 1vw;
+    }
+
+    .title {
+        font-size: 11vmin;
+        text-align: center;
+        margin: 0 1vw;
+        width: 90vw;
+    }
+
+    .artist_text {
+        flex: 3;
+        white-space: nowrap;
+        overflow: hidden;
+        box-sizing: border-box;
+        position: relative;
+        margin-left: 4vw;
+        margin-right: 4vw;
+        color: white;
+    }
+
+    .scroll_artist {
+        display: inline-block;
+        animation: scroll-rtl 10s linear infinite;
+        position: relative;
+        font-size: 6.5vmin;
+        font-style: italic;
+        margin: 0 1vw;
+    }
+
+    .artist {
+        width: 90vw;
+        text-align: center;
+        font-size: 6.5vmin;
+        font-style: italic;
+        margin: 0 1vw;
+    }
+
+    @keyframes scroll-rtl {
+        30% {
+            transform: translate(0, 0);
+            left: 0%;
         }
 
-        .covers {
-            height: 60vh;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-            padding-top: 2vh;
+        75%,
+        100% {
+            transform: translate(-105%, 0);
+            left: 100%;
         }
+    }
 
-        .column {
-            height: 18vh;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-        }
+    #cover_art {
+        height: 60vh;
+        object-fit: contain;
+    }
 
-        .title_text {
-            display: flex;
-            white-space: nowrap;
-            overflow: hidden;
-            box-sizing: border-box;
-            position: relative;
-            margin-top: 3vh;
-            margin-left: 4vw;
-            margin-right: 4vw;
-            color: white;
-            align-items: center;
-        }
+    .playback_buttons {
+        flex: 2;
+        float: center;
+        justify-content: center;
+        align-items: center;
+        margin-top: 5vh;
+        flex-direction: row;
+    }
 
-        .scroll_title {
-            display: inline-block;
-            animation: scroll-rtl 20s linear infinite;
-            position: relative;
-            font-size: 11vmin;
-            margin: 0 1vw;
-        }
+    .playback {
+        flex: 1;
+        float: left;
+        justify-content: center;
+        align-items: center;
+    }
 
-        .title {
-            font-size: 11vmin;
-            text-align: center;
-            margin: 0 1vw;
-            width: 90vw;
-        }
+    .button_style {
+        background-color: black;
+        border: 0;
+    }
 
-        .artist_text {
-            display: flex;
-            white-space: nowrap;
-            overflow: hidden;
-            box-sizing: border-box;
-            position: relative;
-            margin-top: 1.5vh;
-            margin-left: 4vw;
-            margin-right: 4vw;
-            color: white;
-        }
+    .button_style:active {
+        opacity: 60%;
+    }
 
-        .scroll_artist {
-            display: inline-block;
-            animation: scroll-rtl 10s linear infinite;
-            position: relative;
-            font-size: 6.5vmin;
-            font-style: italic;
-            margin: 0 1vw;
-        }
+    .button_img {
+        height: 4vh;
+        object-fit: contain;
+    }
+</style>
 
-        .artist {
-            width: 90vw;
-            text-align: center;
-            font-size: 6.5vmin;
-            font-style: italic;
-            margin: 0 1vw;
-        }
-
-        @keyframes scroll-rtl {
-            30% {
-                transform: translate(0, 0);
-                left: 0%;
-            }
-
-            75%,
-            100% {
-                transform: translate(-105%, 0);
-                left: 100%;
-            }
-        }
-
-        #cover_art {
-            height: 100%;
-            width: 100%;
-            object-fit: contain;
-        }
-
-        .playback_buttons {
-            display: flex;
-            float: center;
-            justify-content: center;
-            align-items: center;
-            height: 8vh;
-            margin-top: 5vh;
-        }
-
-        .playback {
-            display: flex;
-            float: left;
-            justify-content: center;
-            align-items: center;
-            width: 25vw;
-            height: 6vh;
-        }
-
-        .button_style {
-            background-color: black;
-            border: 0;
-        }
-
-        .button_style:active {
-            opacity: 60%;
-        }
-
-        .button_img {
-            width: 8vw;
-            height: 6vh;
-            object-fit: contain;
-        }
-    </style>
-
-    <body>
+<body>
+    <div class="clock"><p id="time"></p></div>
+    <div class="column" id="titles">
         <div class="covers" id="art"><img id='cover_art' src={{ cover_art }} alt="cover art"></div>
-        <div class="column" id="titles">
-            <div class="title_text" id="title_text">
-                <p id='song_title' class="title">{{ title }}</p>
-            </div>
-            <div class="artist_text" id="artist_text">
-                <p id='artists' class="artist">{{ artists }}</p>
-            </div>
+        <div class="title_text" id="title_text">
+            <p id='song_title' class="title">{{ title }}</p>
+        </div>
+        <div class="artist_text" id="artist_text">
+            <p id='artists' class="artist">{{ artists }}</p>
         </div>
         <div class="playback_buttons">
             <div class="playback">
-                <button class="button_style" id="previous" onclick="previous()"><img class="button_img" src="static/playback/previous-track.png"></button>
+                <button class="button_style" id="previous" onclick="previous()"><img class="button_img"
+                        src="static/playback/previous-track.png"></button>
             </div>
             <div class="playback">
-                <button class="button_style" id="pause" onclick="pause()"><img class="button_img" src="static/playback/pause.png"></button>
+                <button class="button_style" id="pause" onclick="pause()"><img class="button_img"
+                        src="static/playback/pause.png"></button>
             </div>
             <div class="playback">
-                <button class="button_style" id="next" onclick="next()"><img class="button_img" src="static/playback/next-track.png"></button>
+                <button class="button_style" id="next" onclick="next()"><img class="button_img"
+                        src="static/playback/next-track.png"></button>
             </div>
         </div>
-    </body>
+    </div>
+</body>
