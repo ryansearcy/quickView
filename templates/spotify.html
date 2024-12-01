@@ -21,14 +21,14 @@
                 document.getElementById('song_title').innerHTML = spotify_data["name"]
                 document.getElementById('cover_art').setAttribute("src", spotify_data["cover_art"])
                 document.getElementById('artists').innerHTML = spotify_data["artists"]
-                if (document.getElementById('song_title').clientWidth < document.getElementById('song_title').scrollWidth) {
+                if (document.getElementById('titles').clientWidth < document.getElementById('song_title').scrollWidth) {
                     document.getElementById('song_title').className = 'scroll_title'
                     document.getElementById('song_title').style.animation = "scroll-rtl " + (document.getElementById('song_title').innerText.length / 3.5) + "s linear infinite"
                 }
                 else {
                     document.getElementById('song_title').style.animation = ""
                 }
-                if (document.getElementById('artists').clientWidth < document.getElementById('artists').scrollWidth) {
+                if (document.getElementById('titles').clientWidth < document.getElementById('artists').scrollWidth) {
                     document.getElementById('artists').className = 'scroll_artist'
                     document.getElementById('artists').style.animation = "scroll-rtl " + (document.getElementById('artists').innerText.length / 3.5) + "s linear infinite"
                 }
@@ -39,13 +39,13 @@
         });
     }
     function checkWidth() {
-        console.log('clientWidth: ' + document.getElementById('song_title').clientWidth)
-        console.log(document.getElementById('song_title').scrollWidth)
-        if (document.getElementById('song_title').clientWidth < document.getElementById('song_title').scrollWidth) {
+        console.log('clientWidth: ' + document.getElementById('titles').clientWidth)
+        console.log(document.getElementById('titles').scrollWidth)
+        if (document.getElementById('titles').clientWidth < document.getElementById('song_title').scrollWidth) {
             document.getElementById('song_title').className = 'scroll_title'
             document.getElementById('song_title').style.animation = "scroll-rtl " + (document.getElementById('song_title').innerText.length / 3.5) + "s linear infinite"
         }
-        if (document.getElementById('artists').clientWidth < document.getElementById('artists').scrollWidth) {
+        if (document.getElementById('titles').clientWidth < document.getElementById('artists').scrollWidth) {
             document.getElementById('artists').className = 'scroll_artist'
             document.getElementById('artists').style.animation = "scroll-rtl " + (document.getElementById('artists').innerText.length / 3.5) + "s linear infinite"
         }
@@ -75,13 +75,15 @@
         background-color: black;
         display: flex;
         flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        margin: 1vh 1vw;
     }
 
     .clock {
         flex: 10;
         color: white;
-        align-self: center;
-        font-size: 5vmin;
+        font-size: 7vmin;
     }
 
     #time {
@@ -89,7 +91,7 @@
     }
 
     .covers {
-        flex: 8;
+        flex: 60;
         display: flex;
         width: 100%;
         align-items: center;
@@ -99,26 +101,33 @@
     .column {
         display: flex;
         align-items: center;
-        flex-direction: column;
-        flex: 90;
+        max-height: 60vh;
+        padding-top: 2vh;
+        align-self: center;
+    }
+
+    .text {
+        flex: 30;
+        white-space: nowrap;
+        overflow: hidden;
+        max-width: 98vw;
     }
 
     .title_text {
-        flex: 5;
-        white-space: nowrap;
-        overflow: hidden;
+        display: flex;
+        align-items: stretch;
         box-sizing: border-box;
         position: relative;
         margin-left: 4vw;
         margin-right: 4vw;
         color: white;
-        align-items: center;
+        padding: 3vh 1vw 1vh 1vw;
     }
 
     .scroll_title {
         display: inline-block;
-        animation: scroll-rtl 20s linear infinite;
         position: relative;
+        animation: scroll-rtl 20s linear infinite;
         font-size: 11vmin;
         margin: 0 1vw;
     }
@@ -127,24 +136,25 @@
         font-size: 11vmin;
         text-align: center;
         margin: 0 1vw;
-        width: 90vw;
+        position: relative;
+        width: 100%;
     }
 
     .artist_text {
-        flex: 3;
-        white-space: nowrap;
-        overflow: hidden;
+        display: flex;
+        align-items: stretch;
         box-sizing: border-box;
         position: relative;
         margin-left: 4vw;
         margin-right: 4vw;
         color: white;
+        padding: 0 1vw 1vh 1vw;
     }
 
     .scroll_artist {
         display: inline-block;
-        animation: scroll-rtl 10s linear infinite;
         position: relative;
+        animation: scroll-rtl 10s linear infinite;
         font-size: 6.5vmin;
         font-style: italic;
         margin: 0 1vw;
@@ -156,6 +166,8 @@
         font-size: 6.5vmin;
         font-style: italic;
         margin: 0 1vw;
+        position: relative;
+        width: 100%;
     }
 
     @keyframes scroll-rtl {
@@ -166,30 +178,32 @@
 
         75%,
         100% {
-            transform: translate(-105%, 0);
+            transform: translate(-100%, 0);
             left: 100%;
         }
     }
 
     #cover_art {
-        height: 60vh;
+        max-height: 60vh;
         object-fit: contain;
     }
 
     .playback_buttons {
-        flex: 2;
-        float: center;
-        justify-content: center;
+        position: absolute;
+        top: 94vh;
+        display: flex;
         align-items: center;
-        margin-top: 5vh;
+        justify-content: center;
         flex-direction: row;
+        min-height: 4.5vmin;
+        width: 98vw;
     }
 
     .playback {
         flex: 1;
-        float: left;
-        justify-content: center;
+        display: flex;
         align-items: center;
+        justify-content: center;
     }
 
     .button_style {
@@ -202,34 +216,39 @@
     }
 
     .button_img {
-        height: 4vh;
+        width: 4.5vmin;
+        height: 4.5vmin;
         object-fit: contain;
     }
 </style>
 
 <body>
-    <div class="clock"><p id="time"></p></div>
-    <div class="column" id="titles">
-        <div class="covers" id="art"><img id='cover_art' src={{ cover_art }} alt="cover art"></div>
+    <div class="clock">
+        <p id="time"></p>
+    </div>
+    <div class="covers" id="art">
+        <img id='cover_art' src={{ cover_art }} alt="cover art">
+    </div>
+    <div class="text" id="titles">
         <div class="title_text" id="title_text">
             <p id='song_title' class="title">{{ title }}</p>
         </div>
         <div class="artist_text" id="artist_text">
             <p id='artists' class="artist">{{ artists }}</p>
         </div>
-        <div class="playback_buttons">
-            <div class="playback">
-                <button class="button_style" id="previous" onclick="previous()"><img class="button_img"
-                        src="static/playback/previous-track.png"></button>
-            </div>
-            <div class="playback">
-                <button class="button_style" id="pause" onclick="pause()"><img class="button_img"
-                        src="static/playback/pause.png"></button>
-            </div>
-            <div class="playback">
-                <button class="button_style" id="next" onclick="next()"><img class="button_img"
-                        src="static/playback/next-track.png"></button>
-            </div>
+    </div>
+    <div class="playback_buttons">
+        <div class="playback">
+            <button class="button_style" id="previous" onclick="previous()"><img class="button_img"
+                    src="static/playback/previous-track.png"></button>
+        </div>
+        <div class="playback">
+            <button class="button_style" id="pause" onclick="pause()"><img class="button_img"
+                    src="static/playback/pause.png"></button>
+        </div>
+        <div class="playback">
+            <button class="button_style" id="next" onclick="next()"><img class="button_img"
+                    src="static/playback/next-track.png"></button>
         </div>
     </div>
 </body>

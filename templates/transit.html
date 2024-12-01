@@ -34,9 +34,55 @@
 			if (i < 10) { i = "0" + i };  // add zero in front of numbers < 10
 			return i;
 		}
+		function getCSSRule(ruleName) {
+			ruleName = ruleName.toLowerCase();
+			var result = null;
+			var find = Array.prototype.find;
+
+			find.call(document.styleSheets, styleSheet => {
+				result = find.call(styleSheet.cssRules, cssRule => {
+					return cssRule instanceof CSSStyleRule
+						&& cssRule.selectorText.toLowerCase() == ruleName;
+				});
+				return result != null;
+			});
+			return result;
+		}
+		function resizeBox() {
+			var box = getCSSRule(".box");
+			var width = document.querySelector(".lines").clientWidth;
+			var height = document.querySelector(".lines").clientHeight;
+			if (width < height) {
+				if (width > 125) {
+					box.style.width = 125;
+					box.style.height = 125;
+				}
+				else {
+					box.style.width = width;
+					box.style.height = width;
+				}
+			}
+			else {
+				if (height > 125) {
+					box.style.width = 125;
+					box.style.height = 125;
+				}
+				else {
+					box.style.width = height;
+					box.style.height = height;
+				}
+			}
+		}
 		window.addEventListener("load", myInit, true); function myInit() {
 			startTime();
 			setInterval(fetchUpdates, 10000);
+			resizeBox();
+		}
+		window.addEventListener("resize", onResize); function onResize() {
+			var box = getCSSRule(".box");
+			box.style.width = 0;
+			box.style.height = 0;
+			resizeBox();
 		}
 	</script>
 	<style>
@@ -44,14 +90,17 @@
 			background-color: black;
 			display: flex;
 			flex-direction: column;
-			height: 95vh;
+			height: 98vh;
+			width: 98vw;
+			justify-content: center;
+			align-items: center;
 		}
 
 		.clock {
 			flex: 5;
 			color: white;
 			align-self: center;
-			font-size: 5vmin;
+			font-size: 7vmin;
 		}
 
 		#time {
@@ -62,7 +111,9 @@
 			display: flex;
 			flex-direction: column;
 			flex: 95;
-			margin: 0vmin 3vmin 3vmin 3vmin;
+			margin: 0vmin 3vmin 1vmin 3vmin;
+			justify-content: center;
+			align-items: center;
 		}
 
 		.row {
@@ -70,58 +121,49 @@
 			flex-direction: row;
 			flex: 1;
 			margin: 1vmin;
-		}
-
-		.logo {
-			display: flex;
-			float: left;
-			flex: 15;
-			justify-content: center;
-			flex-direction: column;
+			justify-content: stretch;
+			align-items: stretch;
+			width: 98vw;
 		}
 
 		.box {
-			display: flex;
-			align-self: center;
 			border-radius: 50%;
 			background-color: #11117D;
+			display: flex;
 			justify-content: center;
 			align-items: center;
-			aspect-ratio: 1/1;
-			position: relative;
-			height: 75%;
+			height: 0;
+			width: 0;
 		}
 
 		.text {
-			flex: 85;
+			flex: 70;
 			display: flex;
 			color: white;
 			justify-content: center;
 			align-items: center;
 		}
 
-		.bus_lines {
+		.lines {
 			display: flex;
-			float: left;
-			flex: 15;
+			flex: 30;
 			color: white;
 			justify-content: center;
 			align-items: center;
-			flex-direction: column;
 		}
 
 		.line_name {
 			font-weight: bold;
-			font-size: 10vmin;
+			font-size: 11vmin;
 			background-color: #11117D;
 			padding-left: 1.2vw;
 			padding-right: 1.2vw;
+			text-align: center;
 			margin: 0;
-
 		}
 
 		.subway_logo {
-			font-size: 10vmin;
+			font-size: 11vmin;
 			font-family: sans-serif;
 			color: white;
 			margin: 0;
@@ -134,43 +176,44 @@
 			font-size: 6vmin;
 			margin: 0;
 			text-align: center;
-			vertical-align: middle;
 		}
 	</style>
 
 	<body>
-		<div class="clock"><p id="time"></p></div>
+		<div class="clock">
+			<p id="time"></p>
+		</div>
 		<div class="rows">
 			{% for line in times['Subway'] %}
 			<div class="row">
-			<div class="logo">
-				<div class="box">
-					<p class='subway_logo'>{{ line }}</p>
+				<div class="lines">
+					<div class="box">
+						<p class='subway_logo'>{{ line }}</p>
+					</div>
 				</div>
-			</div>
-			{% for stop in times['Subway'][line] %}
-			{% set split_times = times['Subway'][line][stop].split("<br>") %}
-			<div class="text">
-				<p class='times' id='{{line}}-{{stop}}'>{% if split_times[1]|length == 0 %}No Departure
-					Times Available
-					{% else %}{{ split_times[0] }}<br>{{ split_times[1] }}{% endif %}</p>
-			</div>
-			{% endfor %}
+				{% for stop in times['Subway'][line] %}
+				{% set split_times = times['Subway'][line][stop].split("<br>") %}
+				<div class="text">
+					<p class='times' id='{{line}}-{{stop}}'>{% if split_times[1]|length == 0 %}No Departure
+						Times Available
+						{% else %}{{ split_times[0] }}<br>{{ split_times[1] }}{% endif %}</p>
+				</div>
+				{% endfor %}
 			</div>
 			{% endfor %}
 			{% for line in times['Bus'] %}
 			<div class="row">
-			<div class="bus_lines">
-				<p class='line_name'>{{line}}</p>
-			</div>
-			{% for stop in times['Bus'][line] %}
-			{% set split_times = times['Bus'][line][stop].split("<br>") %}
-			<div class="text">
-				<p class='times' id='{{line}}-{{stop}}'>{% if split_times[1]|length == 0 %}No Departure
-					Times Available
-					{% else %}{{ split_times[0] }}<br>{{ split_times[1] }}{% endif %}</p>
-			</div>
-			{% endfor %}
+				<div class="lines">
+					<p class='line_name'>{{line}}</p>
+				</div>
+				{% for stop in times['Bus'][line] %}
+				{% set split_times = times['Bus'][line][stop].split("<br>") %}
+				<div class="text">
+					<p class='times' id='{{line}}-{{stop}}'>{% if split_times[1]|length == 0 %}No Departure
+						Times Available
+						{% else %}{{ split_times[0] }}<br>{{ split_times[1] }}{% endif %}</p>
+				</div>
+				{% endfor %}
 			</div>
 			{% endfor %}
 		</div>
