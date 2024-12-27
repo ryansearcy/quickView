@@ -146,6 +146,7 @@ def genAuthCode() -> Response:
     spotifyPasswordInput.send_keys(spotifyPassword)
     firefoxDriver.find_element(value='login-button').click()
     while checkForEmptyGlobalVariables('accessToken'):
+        quickView.logger.debug('waiting for login')
         time.sleep(1)
     firefoxDriver.quit()
     return redirect(url_for('displayPlaybackData'))
@@ -175,10 +176,10 @@ def getSpotifyPlaybackData() -> dict:
     #quickView.logger.debug('Playback State Response Code: ' + playbackInfo.status_code.__str__())
     if playbackInfo.status_code == 200:
         playbackData = playbackInfo.json()
-        quickView.logger.debug('Device ID: ' + playbackData['device']['id'])
+        quickView.logger.debug('Device ID: ' + playbackData['device']['name'])
         playbackData: dict[str, str | int | bool] = {
-            'status_code': playbackInfo.status_code if checkForEmptyGlobalVariables('deviceID') or playbackData['device']['id'] == deviceID else 204,
-            'is_playing': playbackData['is_playing'] if 'is_playing' in playbackData and (checkForEmptyGlobalVariables('deviceID') or playbackData['device']['id'] == deviceID) else False,
+            'status_code': playbackInfo.status_code if checkForEmptyGlobalVariables('deviceID') or playbackData['device']['name'] == deviceID else 204,
+            'is_playing': playbackData['is_playing'] if 'is_playing' in playbackData and (checkForEmptyGlobalVariables('deviceID') or playbackData['device']['name'] == deviceID) else False,
             'name': playbackData['item']['name'] if 'item' in playbackData else '',
             'artists': ', '.join([artist['name'] for artist in playbackData['item']['artists']]) if 'item' in playbackData else '',
             'cover_art': playbackData['item']['album']['images'][0]['url'] if 'item' in playbackData else ''
