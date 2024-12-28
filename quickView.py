@@ -264,7 +264,7 @@ def fetchTransitTimes(apiURIs: list, lineData: list) -> dict:
             arrivalTimes[line]['times'] = 'No Departures'
         else:
             if timesLength > 4:
-                arrivalTimes[line][stop]['times'] = arrivalTimes[line]['times'][:4]
+                arrivalTimes[line]['times'] = arrivalTimes[line]['times'][:4]
             arrivalTimes[line]['times'].sort()
             arrivalTimes[line]['times'] = ', '.join([str(times) for times in arrivalTimes[line]['times']])
     return arrivalTimes
