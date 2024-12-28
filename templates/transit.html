@@ -1,17 +1,38 @@
 <!doctype=html>
 	<script type='text/javascript'>
+		var page = 0;
 		function fetchUpdates() {
 			fetch("/playback-data").then((response) => response.json()).then((result) => {
 				spotify_data = JSON.parse(JSON.stringify(result));
 				if (spotify_data["status_code"] == 204 || (spotify_data["status_code"] == 200 && !spotify_data["is_playing"])) {
 					fetch("/transit-times").then((response) => response.json()).then((result) => {
 						time_data = JSON.parse(JSON.stringify(result));
-						for (var type in time_data) {
-							for (var line in time_data[type]) {
-								for (var stop in time_data[type][line]) {
-									document.getElementById(line + '-' + stop).innerHTML = time_data[type][line][stop];
-								}
+						page++;
+						if (page >= Math.ceil(Object.keys(time_data).length / 4)) {
+							page = 0
+						}
+						var i = 0;
+						for (var line in time_data) {
+							if (i >= 4) {
+								break;
 							}
+							if (line < (4 * page) || line >= (4 * (page + 1))) {
+								continue;
+							}
+							else {
+								if (time_data[line]["type"] == "subway") {
+									document.getElementById(i).innerHTML = '<div class=\"lines\"><div class=\"box\"><p class=\'subway_logo\'>' + time_data[line]["line"] + '</p></div></div>';
+								}
+								else {
+									document.getElementById(i).innerHTML = '<div class=\"lines\"><p class=\'line_name\'>' + time_data[line]["line"] + '</p></div>';
+								}
+								document.getElementById(i).innerHTML = document.getElementById(i).innerHTML + '<div class=\"text\"><p class=\'times\'>' + 'To ' + time_data[line]["destination"] + ':' + '<br>' + time_data[line]["times"] + '</p></div></div>'
+								i++;
+							}
+						}
+						while (i < 4) {
+							document.getElementById(i).innerHTML = null
+							i++;
 						}
 					})
 				}
@@ -184,36 +205,24 @@
 			<p id="time"></p>
 		</div>
 		<div class="rows">
-			{% for line in times['Subway'] %}
-			<div class="row">
+			{% for i in range(0, 4) %}
+			<div class="row" id='{{i}}'>
+				{% if lines[i]['type'] == 'subway' %}
 				<div class="lines">
 					<div class="box">
-						<p class='subway_logo'>{{ line }}</p>
+						<p class='subway_logo'>{{ lines[i]['line'] }}</p>
 					</div>
 				</div>
-				{% for stop in times['Subway'][line] %}
-				{% set split_times = times['Subway'][line][stop].split("<br>") %}
-				<div class="text">
-					<p class='times' id='{{line}}-{{stop}}'>{% if split_times[1]|length == 0 %}No Departure
-						Times Available
-						{% else %}{{ split_times[0] }}<br>{{ split_times[1] }}{% endif %}</p>
-				</div>
-				{% endfor %}
-			</div>
-			{% endfor %}
-			{% for line in times['Bus'] %}
-			<div class="row">
+				{% else %}
 				<div class="lines">
-					<p class='line_name'>{{line}}</p>
+					<p class='line_name'>{{lines[i]['line']}}</p>
 				</div>
-				{% for stop in times['Bus'][line] %}
-				{% set split_times = times['Bus'][line][stop].split("<br>") %}
+				{% endif %}
 				<div class="text">
-					<p class='times' id='{{line}}-{{stop}}'>{% if split_times[1]|length == 0 %}No Departure
-						Times Available
-						{% else %}{{ split_times[0] }}<br>{{ split_times[1] }}{% endif %}</p>
+					<p class='times'>{% if lines[i]['times']|length == 0 %}{{ lines[i]['destination'] }}<br>No
+						Departures
+						{% else %}To {{ lines[i]['destination'] }}:<br>{{ lines[i]['times'] }}{% endif %}</p>
 				</div>
-				{% endfor %}
 			</div>
 			{% endfor %}
 		</div>

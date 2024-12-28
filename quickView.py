@@ -1,5 +1,5 @@
 from flask import Flask, Response, request, redirect, render_template, url_for
-import string, random, base64, requests, json, time
+import string, random, base64, requests, json, time, operator
 from json import JSONDecodeError
 from datetime import timedelta, datetime
 from google.transit import gtfs_realtime_pb2
@@ -34,16 +34,15 @@ accessToken: str = emptyTypes[str]
 refreshToken: str = emptyTypes[str]
 expiresAt: datetime = emptyTypes[datetime]
 #Transit Variables
-transitVariables: list[str] = ['mtaAPIKey', 'subwayData', 'subwayMinMaxAway', 'busData', 'busMinMaxAway', 'mtaAPIURIs']
+transitVariables: list[str] = ['mtaAPIKey', 'lineData', 'mtaAPIURIs']
 mtaAPIKey: str = emptyTypes[str]
-subwayData: dict[Line, dict[StopID, TripID]] = emptyTypes[dict]
-subwayMinMaxAway: dict[Line, dict[str, int]] = emptyTypes[dict]
-busData: dict[Line, dict[StopID, TripID]] = emptyTypes[dict]
-busMinMaxAway: dict[str, dict[str, int]] = emptyTypes[dict]
-mtaAPIURIs: dict[str, str] = emptyTypes[dict]
+lineData: list[dict[str, str]] = emptyTypes[list]
+lineMapping: dict[tuple[str, str], str] = emptyTypes[dict]
+lineList: list[str] = emptyTypes[list]
+mtaAPIURIs: list[str] = emptyTypes[list]
 
 apiVariables: list[str] = emptyTypes[list]
-appVariables: list[str] = spotifyAPIVariables + spotifyTokenVariables + transitVariables + ['apiVariables']
+appVariables: list[str] = spotifyAPIVariables + spotifyTokenVariables + transitVariables + ['apiVariables'] + ['lineMapping', 'lineList']
 
 def checkForEmptyGlobalVariables(variableNames: list[str] | str) -> bool:
     if type(variableNames) == str:
@@ -135,6 +134,9 @@ def genAuthCode() -> Response:
     loadJSONVariables()
     if checkForEmptyGlobalVariables(apiVariables):
         return redirect(url_for('startSetup'))
+    lineData.sort(key=operator.itemgetter('priority'))
+    setGlobalVariable('lineMapping', {(l['line'], l['stop']): l['priority'] for l in lineData})
+    setGlobalVariable('lineList', list(set([l[0] for l in lineMapping])))
     state: str = genRandomString(16)
     firefoxOptions = Options()
     firefoxOptions.add_argument('-headless')
@@ -233,55 +235,50 @@ def nextSong():
         quickView.logger.debug('Error when previous: ' + nextSuccess.status_code.__str__())
     return {'status': nextSuccess.status_code}
 
-def fetchTransitTimes(apiURI: str, lineData: dict, minMaxAway: dict) -> dict:
+def fetchTransitTimes(apiURIs: list, lineData: list) -> dict:
     transitFeed = gtfs_realtime_pb2.FeedMessage()
-    transitTimes = requests.get(apiURI)
-    transitFeed.ParseFromString(transitTimes.content)
-    arrivalTimes = {line: {stop: [] for stop in lineData[line]} for line in lineData}
-    minTimes = {line: {stop: None for stop in lineData[line]} for line in lineData}
-    for entity in transitFeed.entity:
-        if entity.HasField('trip_update') != True:
-            continue
-        routeID = entity.trip_update.trip.route_id
-        tripID = entity.trip_update.trip.trip_id
-        if routeID not in lineData.keys():
-            continue
-        lineStops = lineData[routeID].keys()
-        for stopTimeUpdate in entity.trip_update.stop_time_update:
-            stopID = stopTimeUpdate.stop_id
-            if stopID not in lineStops:
+    arrivalTimes = {line['priority']: {'type': line['type'], 'line': line['line'], 'destination': line['destination'], 'times': []} for line in lineData}
+    lineKeys = lineMapping.keys()
+    for uri in apiURIs:
+        transitTimes = requests.get(uri)
+        transitFeed.ParseFromString(transitTimes.content)
+        for entity in transitFeed.entity:
+            if entity.HasField('trip_update') != True:
                 continue
-            minutesAway = round((datetime.fromtimestamp(stopTimeUpdate.arrival.time) - datetime.now()).total_seconds() / 60)
-            if minutesAway > minMaxAway[routeID]['max'] or minutesAway < minMaxAway[routeID]['min']:
+            routeID = entity.trip_update.trip.route_id
+            if routeID not in lineList:
                 continue
-            if minTimes[routeID][stopID] is None or minutesAway < minTimes[routeID][stopID]:
-                #if lineData[routeID][stopID] != tripID:
-                    #busData[(routeID, stopID)] = lastStopID
-                minTimes[routeID][stopID] = minutesAway
-            arrivalTimes[routeID][stopID].append(minutesAway)
+            for stopTimeUpdate in entity.trip_update.stop_time_update:
+                stopID = stopTimeUpdate.stop_id
+                if (routeID, stopID) not in lineKeys:
+                    continue
+                minutesAway = round((datetime.fromtimestamp(stopTimeUpdate.arrival.time) - datetime.now()).total_seconds() / 60)
+                minTime = lineData[lineMapping[(routeID, stopID)]]['min']
+                maxTime = lineData[lineMapping[(routeID, stopID)]]['max']
+                if minutesAway > maxTime or minutesAway < minTime:
+                    continue
+                arrivalTimes[lineMapping[(routeID, stopID)]]['times'].append(minutesAway)
     for line in arrivalTimes:
-        for stop in arrivalTimes[line]:
-            timesLength: int = len(arrivalTimes[line][stop])
-            if  timesLength == 0:
-                arrivalTimes[line][stop] = 'No Departures'
-            else:
-                if timesLength > 4:
-                    arrivalTimes[line][stop] = arrivalTimes[line][stop][:4]
-                arrivalTimes[line][stop].sort()
-                arrivalTimes[line][stop] = ', '.join([str(times) for times in arrivalTimes[line][stop]])
-            arrivalTimes[line][stop] = 'To ' + lineData[line][stop] + ':<br>' + arrivalTimes[line][stop]
+        timesLength: int = len(arrivalTimes[line]['times'])
+        if  timesLength == 0:
+            arrivalTimes[line]['times'] = 'No Departures'
+        else:
+            if timesLength > 4:
+                arrivalTimes[line][stop]['times'] = arrivalTimes[line]['times'][:4]
+            arrivalTimes[line]['times'].sort()
+            arrivalTimes[line]['times'] = ', '.join([str(times) for times in arrivalTimes[line]['times']])
     return arrivalTimes
 
 @quickView.route("/realtime-transit")
 def realtimeTransit() -> str:
     if checkForEmptyGlobalVariables(spotifyTokenVariables):
         return redirect(url_for('genAuthCode'))
-    transitTimes = {'Subway': fetchTransitTimes(mtaAPIURIs['Subway'], subwayData, subwayMinMaxAway), 'Bus': fetchTransitTimes(mtaAPIURIs['Bus'], busData, busMinMaxAway)}
+    transitTimes = fetchTransitTimes(mtaAPIURIs, lineData)
     #quickView.logger.debug('Successfully fetched transit times')
-    return render_template('transit.html', times=transitTimes, keep_trailing_newline=True)
+    return render_template('transit.html', lines=transitTimes, keep_trailing_newline=True)
 
 @quickView.get("/transit-times")
 def fetchTimes() -> str:
-    transitTimes = {'Subway': fetchTransitTimes(mtaAPIURIs['Subway'], subwayData, subwayMinMaxAway), 'Bus': fetchTransitTimes(mtaAPIURIs['Bus'], busData, busMinMaxAway)}
+    transitTimes = fetchTransitTimes(mtaAPIURIs, lineData)
     #quickView.logger.debug('Transit Times: ' + json.dumps(transitTimes))
     return json.dumps(transitTimes)
