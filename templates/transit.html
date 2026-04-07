@@ -1,38 +1,20 @@
 <!doctype=html>
 	<script type='text/javascript'>
-		var page = 0;
 		function fetchUpdates() {
 			fetch("/playback-data").then((response) => response.json()).then((result) => {
 				spotify_data = JSON.parse(JSON.stringify(result));
 				if (spotify_data["status_code"] == 204 || (spotify_data["status_code"] == 200 && !spotify_data["is_playing"])) {
 					fetch("/transit-times").then((response) => response.json()).then((result) => {
 						time_data = JSON.parse(JSON.stringify(result));
-						page++;
-						if (page >= Math.ceil(Object.keys(time_data).length / 4)) {
-							page = 0
-						}
-						var i = 0;
-						for (var line in time_data) {
-							if (i >= 4) {
-								break;
-							}
-							if (line < (4 * page) || line >= (4 * (page + 1))) {
-								continue;
-							}
-							else {
-								if (time_data[line]["type"] == "subway") {
-									document.getElementById(i).innerHTML = '<div class=\"lines\"><div class=\"box\"><p class=\'subway_logo\'>' + time_data[line]["line"] + '</p></div></div>';
+						for (var station in time_data) {
+							for (var dest in time_data[station]) {
+								if (JSON.stringify(time_data[station][dest]) == '{}') {
+									document.getElementById(station.concat(dest)).innerHTML = 'To ' + dest + ':' + '<br>No Departures';
 								}
 								else {
-									document.getElementById(i).innerHTML = '<div class=\"lines\"><p class=\'line_name\'>' + time_data[line]["line"] + '</p></div>';
+									document.getElementById(station.concat(dest)).innerHTML = 'To ' + time_data[station][dest]['hS'] + ':' + '<br>' + time_data[station][dest]['tTA'];
 								}
-								document.getElementById(i).innerHTML = document.getElementById(i).innerHTML + '<div class=\"text\"><p class=\'times\'>' + 'To ' + time_data[line]["destination"] + ':' + '<br>' + time_data[line]["times"] + '</p></div></div>'
-								i++;
 							}
-						}
-						while (i < 4) {
-							document.getElementById(i).innerHTML = null
-							i++;
 						}
 					})
 				}
@@ -96,7 +78,7 @@
 		}
 		window.addEventListener("load", myInit, true); function myInit() {
 			startTime();
-			setInterval(fetchUpdates, 10000);
+			setInterval(fetchUpdates, 20000);
 			resizeBox();
 		}
 		window.addEventListener("resize", onResize); function onResize() {
@@ -139,7 +121,7 @@
 
 		.row {
 			display: flex;
-			flex-direction: row;
+			flex-direction: column;
 			flex: 1;
 			margin: 1vmin;
 			justify-content: stretch;
@@ -157,17 +139,29 @@
 			width: 0;
 		}
 
-		.text {
-			flex: 70;
+		.text-wrapper {
 			display: flex;
+			flex: 40;
+			flex-direction: row;
 			color: white;
+			justify-content: center;
+			align-items: center;
+			margin: 1vh;
+		}
+
+		.text {
+			display: flex;
+			flex: 1;
+			margin-left: 1vw;
+			margin-right: 1vw;
 			justify-content: center;
 			align-items: center;
 		}
 
 		.lines {
 			display: flex;
-			flex: 30;
+			flex: 60;
+			width: 100%;
 			color: white;
 			justify-content: center;
 			align-items: center;
@@ -175,10 +169,12 @@
 
 		.line_name {
 			font-weight: bold;
+			font-family: sans-serif;
+			font-weight: 800;
 			font-size: 11vmin;
-			background-color: #11117D;
-			padding-left: 1.2vw;
-			padding-right: 1.2vw;
+			background-color: #0e95d0;
+			border-radius: 25px;
+			padding: 2vh;
 			text-align: center;
 			margin: 0;
 		}
@@ -192,11 +188,22 @@
 			font-weight: bold;
 		}
 
-		.times {
-			padding-left: 1.5vw;
+		.timesWTC {
 			font-size: 6vmin;
 			margin: 0;
+			padding: 2vh;
 			text-align: center;
+			background-color: red;
+			border-radius: 25px;
+		}
+
+		.times33S {
+			font-size: 6vmin;
+			margin: 0;
+			padding: 2vh;
+			border-radius: 25px;
+			text-align: center;
+			background-color: orange;
 		}
 	</style>
 
@@ -205,23 +212,19 @@
 			<p id="time"></p>
 		</div>
 		<div class="rows">
-			{% for i in range(0, 4) %}
-			<div class="row" id='{{i}}'>
-				{% if lines[i]['type'] == 'subway' %}
+			{% for i in lines %}
+			<div class="row" id="{{i}}">
 				<div class="lines">
-					<div class="box">
-						<p class='subway_logo'>{{ lines[i]['line'] }}</p>
+					<p class='line_name'>{{i}}</p>
+				</div>
+				<div class="text-wrapper">
+					{% for j in lines[i] %}
+					<div class="text">
+						<p class="{{'times'~j}}" id="{{i~j}}">{% if lines[i][j]|length == 0 %}To {{ j }}:<br>No
+							Departures
+							{% else %}To {{ lines[i][j]['hS'] }}:<br>{{ lines[i][j]['tTA'] }}{% endif %}</p>
 					</div>
-				</div>
-				{% else %}
-				<div class="lines">
-					<p class='line_name'>{{lines[i]['line']}}</p>
-				</div>
-				{% endif %}
-				<div class="text">
-					<p class='times'>{% if lines[i]['times']|length == 0 %}{{ lines[i]['destination'] }}<br>No
-						Departures
-						{% else %}To {{ lines[i]['destination'] }}:<br>{{ lines[i]['times'] }}{% endif %}</p>
+					{% endfor %}
 				</div>
 			</div>
 			{% endfor %}
