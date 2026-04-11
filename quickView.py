@@ -2,7 +2,6 @@ from flask import Flask, Response, request, redirect, render_template, url_for
 import string, random, base64, requests, json, time, operator, math, re
 from json import JSONDecodeError
 from datetime import timedelta, datetime
-from google.transit import gtfs_realtime_pb2
 from typing import Any
 from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
@@ -12,12 +11,10 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from bs4 import BeautifulSoup
+import python_weather
+import asyncio
 
 quickView = Flask(__name__)
-
-type Line = str
-type StopID = str
-type TripID = str
 
 emptyString: str = ''
 emptyTypes: dict[type, Any] = {str: emptyString, list: [], dict: {}, datetime: datetime.today()}
@@ -38,16 +35,24 @@ accessToken: str = emptyTypes[str]
 refreshToken: str = emptyTypes[str]
 expiresAt: datetime = emptyTypes[datetime]
 #Transit Variables
-transitVariables: list[str] = ['mtaAPIKey', 'lineData', 'mtaAPIURIs']
-mtaAPIKey: str = emptyTypes[str]
-lineData: list[dict[str, str]] = emptyTypes[list]
-lineMapping: dict[tuple[str, str], str] = emptyTypes[dict]
-lineList: list[str] = emptyTypes[list]
-mtaAPIURIs: list[str] = emptyTypes[list]
+transitVariables = ['stations', 'schedule']
+stations: list = emptyTypes[list]
 schedule: dict = {}
+#Weather Variables
+weatherVariables = ['weather', 'temp']
+weather: str = emptyTypes[str]
+temp: str = emptyTypes[str]
+weatherEmojiMapping = {
+    'Partly cloudy': '9925',
+    'Sunny': '9728',
+    'Clear': '9728',
+    'Overcast': 'x2601',
+    'Mist': '127745',
+    'Fog': '127745',
+}
 
 apiVariables: list[str] = emptyTypes[list]
-appVariables: list[str] = spotifyAPIVariables + spotifyTokenVariables + transitVariables + ['apiVariables'] + ['lineMapping', 'lineList'] + ['schedule']
+appVariables: list[str] = spotifyAPIVariables + spotifyTokenVariables + ['apiVariables'] + transitVariables + weatherVariables
 
 class HtmlTable(object):
     '''
@@ -192,7 +197,7 @@ def setGlobalVariable(variableName: str | list[str], value: Any, writeToJSON: bo
 
 def loadJSONVariables() -> None:
     try:
-        jsonFile = open("config.json", "r")
+        jsonFile = open("configPATH.json", "r")
         try:
             jsonData = json.load(jsonFile)
             for variable in jsonData:
@@ -201,12 +206,12 @@ def loadJSONVariables() -> None:
             jsonFile.close()
             return
     except:
-        jsonFile = open("config.json", "x")
+        jsonFile = open("configPATH.json", "x")
     jsonFile.close()
     return
 
 def writeJSONVariables(variables: dict[str, Any]) -> None:
-    jsonFile = open("config.json", "r")
+    jsonFile = open("configPATH.json", "r")
     try:
         jsonData = json.load(jsonFile)
     except JSONDecodeError:
@@ -214,7 +219,7 @@ def writeJSONVariables(variables: dict[str, Any]) -> None:
     jsonFile.close()
     for v in variables:
         jsonData[v] = variables[v]
-    jsonFile = open("config.json", "w")
+    jsonFile = open("configPATH.json", "w")
     jsonFile.write(json.dumps(jsonData))
     jsonFile.close()
     return
@@ -257,14 +262,23 @@ def refreshAuthToken() -> int:
     fetchSchedules()
     return authResponse.status_code
 
+def getWeather() -> str:
+    city = "Jersey+City"
+    w = requests.get(f"""https://wttr.in/{city}?format=%C""").text
+    t = re.search(r"\d+", requests.get(f"""https://wttr.in/{city}?format=%t""").text)[0]
+    w = weatherEmojiMapping[w]
+    quickView.logger.debug(w)
+    quickView.logger.debug(t)
+    setGlobalVariable('weather', w)
+    setGlobalVariable('temp', t)
+    return
+
 @quickView.route("/")
 def genAuthCode() -> Response:
     loadJSONVariables()
     if checkForEmptyGlobalVariables(apiVariables):
         return redirect(url_for('startSetup'))
-    lineData.sort(key=operator.itemgetter('priority'))
-    setGlobalVariable('lineMapping', {(l['line'], l['stop']): l['priority'] for l in lineData})
-    setGlobalVariable('lineList', list(set([l[0] for l in lineMapping])))
+    getWeather()
    # fetchSchedules()
     state: str = genRandomString(16)
     quickView.logger.debug('Starting firefox headless')
@@ -280,6 +294,7 @@ def genAuthCode() -> Response:
     firefoxDriver.find_element(By.XPATH, "//form").submit()
     time.sleep(2)
     firefoxDriver.get('https://accounts.spotify.com/authorize?' + f'response_type=code&client_id={clientID}&scope={appScope}&redirect_uri={redirectUri}&state={state}')
+    quickView.logger.debug('https://accounts.spotify.com/authorize?' + f'response_type=code&client_id={clientID}&scope={appScope}&redirect_uri={redirectUri}&state={state}')
     while checkForEmptyGlobalVariables('accessToken'):
         quickView.logger.debug('waiting for login')
         time.sleep(1)
@@ -374,20 +389,39 @@ def nextSong():
                 
 def fetchTransitTimes() -> dict:
     pathJSON = requests.get("https://www.panynj.gov/bin/portauthority/ridepath.json", headers={'User-Agent':'Firefox'}).json()
-    groveSt = [destinationData['messages'] for destinationData in [stationData['destinations'] for stationData in pathJSON['results'] if stationData['consideredStation'] == 'GRV'][0] if destinationData['label'] == 'ToNY'][0]
-    exchangePlace = [destinationData['messages'] for destinationData in [stationData['destinations'] for stationData in pathJSON['results'] if stationData['consideredStation'] == 'EXP'][0] if destinationData['label'] == 'ToNY'][0]
-    pathTimes = {'Grove St':{'WTC':{}, '33S':{}}, 'Exchange Place':{'WTC':{}}}
-    mappings = {'Grove St':groveSt, 'Exchange Place':exchangePlace}
+    pathTimes = {}
+    mappings = {}
+    for s in stations:
+        pathTimes[s['stationName']] = {dest: {} for dest in [dest.strip() for dest in s['destinations'].split(',')]}
+        for d in [d.strip() for d in s['direction'].split(',')]:
+            if s['stationName'] in mappings:
+                mappings[s['stationName']] = mappings[s['stationName']] + [destinationData['messages'] for destinationData in [stationData['destinations'] for stationData in pathJSON['results'] if stationData['consideredStation'] == s['consideredStation']][0] if destinationData['label'] == d][0]
+            else:
+                mappings[s['stationName']] = [destinationData['messages'] for destinationData in [stationData['destinations'] for stationData in pathJSON['results'] if stationData['consideredStation'] == s['consideredStation']][0] if destinationData['label'] == d][0]
     for i in mappings:
         for j in mappings[i]:
+            if j['target'] not in pathTimes[i]:
+                continue
             if pathTimes[i][j['target']] != {}:
                 pathTimes[i][j['target']]['tTA'] = pathTimes[i][j['target']]['tTA'] + ', ' + str(math.floor(int(j['secondsToArrival'])/60)) + ' mins'
                 if pathTimes[i][j['target']]['sTA'] > int(j['secondsToArrival']):
-                    pathTimes[i][j['target']]['hS'] = j['headSign']
+                    match(j['headSign']):
+                        case '33rd Street':
+                            pathTimes[i][j['target']]['hS'] = '33rd St'
+                        case '33rd Street via Hoboken':
+                            pathTimes[i][j['target']]['hS'] = '33rd via HOB'
+                        case _:
+                            pathTimes[i][j['target']]['hS'] = j['target']
             else:
                 pathTimes[i][j['target']]['sTA'] = int(j['secondsToArrival'])
                 pathTimes[i][j['target']]['tTA'] = str(math.floor(int(j['secondsToArrival'])/60)) + ' mins'
-                pathTimes[i][j['target']]['hS'] = j['headSign']
+                match(j['headSign']):
+                        case '33rd Street':
+                            pathTimes[i][j['target']]['hS'] = '33rd St'
+                        case '33rd Street via Hoboken':
+                            pathTimes[i][j['target']]['hS'] = '33rd via HOB'
+                        case _:
+                            pathTimes[i][j['target']]['hS'] = j['target']
     return pathTimes
 
 @quickView.route("/realtime-transit")
@@ -401,3 +435,8 @@ def realtimeTransit() -> str:
 def fetchTimes() -> str:
     transitTimes = fetchTransitTimes()
     return json.dumps(transitTimes)
+
+@quickView.get("/weather")
+def updateWeather() -> str:
+    getWeather()
+    return json.dumps({'weather': weather, 'temp': temp})

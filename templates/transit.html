@@ -1,4 +1,5 @@
 <!doctype=html>
+<meta charset="UTF-8">
 	<script type='text/javascript'>
 		function fetchUpdates() {
 			fetch("/playback-data").then((response) => response.json()).then((result) => {
@@ -9,7 +10,12 @@
 						for (var station in time_data) {
 							for (var dest in time_data[station]) {
 								if (JSON.stringify(time_data[station][dest]) == '{}') {
-									document.getElementById(station.concat(dest)).innerHTML = 'To ' + dest + ':' + '<br>No Departures';
+									if (dest == '33S') {
+										document.getElementById(station.concat(dest)).innerHTML = 'To 33rd St:' + '<br>No Departures';
+									}
+									else {
+										document.getElementById(station.concat(dest)).innerHTML = 'To ' + dest + ':' + '<br>No Departures';
+									}
 								}
 								else {
 									document.getElementById(station.concat(dest)).innerHTML = 'To ' + time_data[station][dest]['hS'] + ':' + '<br>' + time_data[station][dest]['tTA'];
@@ -22,6 +28,12 @@
 					window.location.replace("/spotify")
 				}
 			});
+		}
+		function updateWeather() {
+			fetch("/weather").then((response) => response.json()).then((result) => {
+				weather_data = JSON.parse(JSON.stringify(result));
+				document.getElementById("temp").innerHTML = '&#'+weather_data['weather']+' '+weather_data['temp']+'&deg';
+			})
 		}
 		function startTime() {
 			const today = new Date();
@@ -78,7 +90,9 @@
 		}
 		window.addEventListener("load", myInit, true); function myInit() {
 			startTime();
+			updateWeather();
 			setInterval(fetchUpdates, 20000);
+			setInterval(updateWeather, 300000);
 			resizeBox();
 		}
 		window.addEventListener("resize", onResize); function onResize() {
@@ -110,11 +124,27 @@
 			margin: 0;
 		}
 
+		.weather {
+			flex: 5;
+			color: white;
+			font-weight: bold;
+			font-family: sans-serif;
+			font-weight: 800;
+			font-size: 8vmin;
+			border-radius: 25px;
+			text-align: center;
+			margin: 0;
+		}
+
+		#temp {
+			margin: 0;
+		}
+
 		.rows {
 			display: flex;
 			flex-direction: column;
-			flex: 95;
-			margin: 0vmin 3vmin 1vmin 3vmin;
+			flex: 90;
+			margin: 0vmin 2vmin 1vmin 2vmin;
 			justify-content: center;
 			align-items: center;
 		}
@@ -123,75 +153,53 @@
 			display: flex;
 			flex-direction: column;
 			flex: 1;
-			margin: 1vmin;
-			justify-content: stretch;
-			align-items: stretch;
-			width: 98vw;
-		}
-
-		.box {
-			border-radius: 50%;
-			background-color: #11117D;
-			display: flex;
 			justify-content: center;
 			align-items: center;
-			height: 0;
-			width: 0;
+			margin: 1vmin;
 		}
 
 		.text-wrapper {
 			display: flex;
-			flex: 40;
 			flex-direction: row;
 			color: white;
 			justify-content: center;
 			align-items: center;
-			margin: 1vh;
+			margin: 0;
 		}
 
 		.text {
 			display: flex;
-			flex: 1;
-			margin-left: 1vw;
-			margin-right: 1vw;
+			margin: 2vmin;
 			justify-content: center;
 			align-items: center;
 		}
 
 		.lines {
 			display: flex;
-			flex: 60;
 			width: 100%;
 			color: white;
 			justify-content: center;
 			align-items: center;
+			margin-top: 1vmin;
+			margin-bottom: 2vmin;
 		}
 
 		.line_name {
 			font-weight: bold;
 			font-family: sans-serif;
 			font-weight: 800;
-			font-size: 11vmin;
+			font-size: 8vmin;
 			background-color: #0e95d0;
 			border-radius: 25px;
-			padding: 2vh;
+			padding: 2vmin;
 			text-align: center;
 			margin: 0;
-		}
-
-		.subway_logo {
-			font-size: 11vmin;
-			font-family: sans-serif;
-			color: white;
-			margin: 0;
-			text-align: center;
-			font-weight: bold;
 		}
 
 		.timesWTC {
 			font-size: 6vmin;
 			margin: 0;
-			padding: 2vh;
+			padding: 2vmin;
 			text-align: center;
 			background-color: red;
 			border-radius: 25px;
@@ -200,10 +208,19 @@
 		.times33S {
 			font-size: 6vmin;
 			margin: 0;
-			padding: 2vh;
+			padding: 2vmin;
 			border-radius: 25px;
 			text-align: center;
 			background-color: orange;
+		}
+
+		.timesNWK {
+			font-size: 6vmin;
+			margin: 0;
+			padding: 2vmin;
+			text-align: center;
+			background-color: red;
+			border-radius: 25px;
 		}
 	</style>
 
@@ -211,14 +228,18 @@
 		<div class="clock">
 			<p id="time"></p>
 		</div>
+		<div class="weather">
+			<p id="temp">&deg</p>
+		</div>
 		<div class="rows">
 			{% for i in lines %}
 			<div class="row" id="{{i}}">
 				<div class="lines">
 					<p class='line_name'>{{i}}</p>
 				</div>
+				{% for n in lines[i]|batch(2) %}
 				<div class="text-wrapper">
-					{% for j in lines[i] %}
+					{% for j in n %}
 					<div class="text">
 						<p class="{{'times'~j}}" id="{{i~j}}">{% if lines[i][j]|length == 0 %}To {{ j }}:<br>No
 							Departures
@@ -226,6 +247,7 @@
 					</div>
 					{% endfor %}
 				</div>
+				{% endfor %}
 			</div>
 			{% endfor %}
 		</div>
