@@ -32,6 +32,7 @@ weatherEmojiMapping = {
     'Overcast': 'x2601',
     'Mist': '127745',
     'Fog': '127745',
+    'Rain': '127783'
 }
 
 apiVariables: list[str] = emptyTypes[list]
