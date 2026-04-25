@@ -1,38 +1,30 @@
 <!doctype=html>
-<meta charset="UTF-8">
+	<meta charset="UTF-8">
 	<script type='text/javascript'>
 		function fetchUpdates() {
-			fetch("/playback-data").then((response) => response.json()).then((result) => {
-				spotify_data = JSON.parse(JSON.stringify(result));
-				if (spotify_data["status_code"] == 204 || (spotify_data["status_code"] == 200 && !spotify_data["is_playing"])) {
-					fetch("/transit-times").then((response) => response.json()).then((result) => {
-						time_data = JSON.parse(JSON.stringify(result));
-						for (var station in time_data) {
-							for (var dest in time_data[station]) {
-								if (JSON.stringify(time_data[station][dest]) == '{}') {
-									if (dest == '33S') {
-										document.getElementById(station.concat(dest)).innerHTML = 'To 33rd St:' + '<br>No Departures';
-									}
-									else {
-										document.getElementById(station.concat(dest)).innerHTML = 'To ' + dest + ':' + '<br>No Departures';
-									}
-								}
-								else {
-									document.getElementById(station.concat(dest)).innerHTML = 'To ' + time_data[station][dest]['hS'] + ':' + '<br>' + time_data[station][dest]['tTA'];
-								}
+			fetch("/transit-times").then((response) => response.json()).then((result) => {
+				time_data = JSON.parse(JSON.stringify(result));
+				for (var station in time_data) {
+					for (var dest in time_data[station]) {
+						if (JSON.stringify(time_data[station][dest]) == '{}') {
+							if (dest == '33S') {
+								document.getElementById(station.concat(dest)).innerHTML = 'To 33rd St:' + '<br>No Departures';
+							}
+							else {
+								document.getElementById(station.concat(dest)).innerHTML = 'To ' + dest + ':' + '<br>No Departures';
 							}
 						}
-					})
+						else {
+							document.getElementById(station.concat(dest)).innerHTML = 'To ' + time_data[station][dest]['hS'] + ':' + '<br>' + time_data[station][dest]['tTA'];
+						}
+					}
 				}
-				else {
-					window.location.replace("/spotify")
-				}
-			});
+			})
 		}
 		function updateWeather() {
 			fetch("/weather").then((response) => response.json()).then((result) => {
 				weather_data = JSON.parse(JSON.stringify(result));
-				document.getElementById("temp").innerHTML = '&#'+weather_data['weather']+' '+weather_data['temp']+'&deg';
+				document.getElementById("temp").innerHTML = '&#' + weather_data['weather'] + ' ' + weather_data['temp'] + '&deg';
 			})
 		}
 		function startTime() {
