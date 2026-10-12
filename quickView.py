@@ -18,64 +18,54 @@ weatherVariables = ['weather', 'temp']
 weather: str = emptyTypes[str]
 temp: str = emptyTypes[str]
 weatherEmojiMapping = {
-    'Partly cloudy': '9925',            # ⛅
-    'Sunny': '9728',                    # ☀️
-    'Clear': '9728',                    # ☀️
-    'Overcast': 'x2601',                # ☁️
-    'Mist': '127745',                   # 🌁
-    'Fog': '127745',                    # 🌁
-    'Rain': '127783',                   # 🌧️
+    'partly cloudy': '9925',             # ⛅
+    'sunny': '9728',                     # ☀️
+    'clear': '9728',                     # ☀️
+    'overcast': '9729',                  # ☁️
+    'mist': '127745',                    # 🌁
+    'fog': '127745',                     # 🌁
+    'rain': '127783',                    # 🌧️
 
     # Additional cloudy & overcast conditions
-    'Cloudy': '9729',                   # ☁️
-    'Patchy cloudy': '9925',            # ⛅
+    'cloudy': '9729',                    # ☁️
+    'patchy cloudy': '9925',             # ⛅
 
     # Additional fog & visibility conditions
-    'Freezing fog': '127745',           # 🌁
+    'freezing fog': '127745',            # 🌁
 
     # Rain, drizzle & showers
-    'Light rain': '127783',             # 🌧️
-    'Heavy rain': '127783',             # 🌧️
-    'Moderate rain': '127783',          # 🌧️
-    'Patchy rain possible': '127783',   # 🌧️
-    'Patchy light rain': '127783',      # 🌧️
-    'Light rain shower': '127783',      # 🌧️
-    'Moderate or heavy rain shower': '127783', # 🌧️
-    'Torrential rain shower': '127783', # 🌧️
-    'Heavy rain at times': '127783',    # 🌧️
-    'Patchy light drizzle': '127783',   # 🌧️
-    'Light drizzle': '127783',          # 🌧️
-    'Freezing drizzle': '127783',       # 🌧️
-    'Heavy freezing drizzle': '127783', # 🌧️
+    'light rain': '127783',              # 🌧️
+    'heavy rain': '127783',              # 🌧️
+    'moderate rain': '127783',           # 🌧️
+    'patchy rain possible': '127783',    # 🌧️
+    'patchy light rain': '127783',       # 🌧️
+    'light rain shower': '127783',       # 🌧️
+    'moderate or heavy rain shower': '127783', # 🌧️
+    'torrential rain shower': '127783',  # 🌧️
+    'heavy rain at times': '127783',     # 🌧️
+    'patchy light drizzle': '127783',    # 🌧️
+    'light drizzle': '127783',           # 🌧️
+    'freezing drizzle': '127783',        # 🌧️
+    'heavy freezing drizzle': '127783',  # 🌧️
 
     # Thunderstorms
-    'Thundery outbreaks possible': '9928',    # ⛈️
-    'Patchy light rain with thunder': '9928', # ⛈️
-    'Moderate or heavy rain with thunder': '9928', # ⛈️
-    'Patchy light snow with thunder': '9928', # ⛈️
-    'Moderate or heavy snow with thunder': '9928', # ⛈️
+    'thundery outbreaks possible': '9928',    # ⛈️
+    'patchy light rain with thunder': '9928', # ⛈️
+    'moderate or heavy rain with thunder': '9928', # ⛈️
+    'patchy light snow with thunder': '9928', # ⛈️
+    'moderate or heavy snow with thunder': '9928', # ⛈️
 
     # Snow, sleet & ice pellets
-    'Snow': '127784',                   # 🌨️
-    'Light snow': '127784',             # 🌨️
-    'Heavy snow': '127784',             # 🌨️
-    'Moderate snow': '127784',          # 🌨️
-    'Patchy snow possible': '127784',   # 🌨️
-    'Patchy light snow': '127784',      # 🌨️
-    'Patchy moderate snow': '127784',   # 🌨️
-    'Patchy heavy snow': '127784',      # 🌨️
-    'Light snow showers': '127784',     # 🌨️
-    'Moderate or heavy snow showers': '127784', # 🌨️
-    'Blowing snow': '127784',           # 🌨️
-    'Blizzard': '127784',               # 🌨️
-    'Sleet': '127783',                  # 🌧️
-    'Light sleet': '127783',
-    'Moderate or heavy sleet': '127783',
-    'Light sleet showers': '127783',
-    'Moderate or heavy sleet showers': '127783',
-    'Ice pellets': '127783',
-    'Light showers of ice pellets': '127783',
-    'Moderate or heavy showers of ice pellets': '127783'
+    'snow': '127784',                    # 🌨️
+    'light snow': '127784',              # 🌨️
+    'heavy snow': '127784',              # 🌨️
+    'moderate snow': '127784',           # 🌨️
+    'patchy snow possible': '127784',    # 🌨️
+    'patchy light snow': '127784',       # 🌨️
+    'patchy moderate snow': '127784',    # 🌨️
+    'patchy heavy snow': '127784',       # 🌨️
+    'light snow showers': '127784',      # 🌨️
+    'moderate or heavy snow showers': '127784', #🌨️
 }
 
 apiVariables: list[str] = emptyTypes[list]
@@ -140,9 +130,9 @@ def writeJSONVariables(variables: dict[str, Any]) -> None:
 
 def getWeather() -> str:
     city = "Jersey+City"
-    w = requests.get(f"""https://wttr.in/{city}?format=%C""").text
+    w = requests.get(f"""https://wttr.in/{city}?format=%C""").text.strip().lower()
     t = re.search(r"\d+", requests.get(f"""https://wttr.in/{city}?format=%t""").text)[0]
-    w = weatherEmojiMapping[w]
+    w = weatherEmojiMapping.get(w, 2754)
     quickView.logger.debug(w)
     quickView.logger.debug(t)
     setGlobalVariable('weather', w)
