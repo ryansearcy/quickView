@@ -27,20 +27,6 @@
 				document.getElementById("temp").innerHTML = '&#' + weather_data['weather'] + ' ' + weather_data['temp'] + '&deg';
 			})
 		}
-		function startTime() {
-			const today = new Date();
-			let h = today.getHours();
-			let m = today.getMinutes();
-			let s = today.getSeconds();
-			m = checkTime(m);
-			s = checkTime(s);
-			document.getElementById('time').innerHTML = h + ":" + m + ":" + s;
-			setTimeout(startTime, 1000);
-		}
-		function checkTime(i) {
-			if (i < 10) { i = "0" + i };  // add zero in front of numbers < 10
-			return i;
-		}
 		function getCSSRule(ruleName) {
 			ruleName = ruleName.toLowerCase();
 			var result = null;
@@ -81,7 +67,6 @@
 			}
 		}
 		window.addEventListener("load", myInit, true); function myInit() {
-			startTime();
 			updateWeather();
 			setInterval(fetchUpdates, 20000);
 			setInterval(updateWeather, 300000);
@@ -103,17 +88,6 @@
 			width: 98vw;
 			justify-content: center;
 			align-items: center;
-		}
-
-		.clock {
-			flex: 5;
-			color: white;
-			align-self: center;
-			font-size: 7vmin;
-		}
-
-		#time {
-			margin: 0;
 		}
 
 		.weather {
@@ -217,9 +191,6 @@
 	</style>
 
 	<body>
-		<div class="clock">
-			<p id="time"></p>
-		</div>
 		<div class="weather">
 			<p id="temp">&deg</p>
 		</div>
