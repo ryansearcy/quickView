@@ -43,129 +43,68 @@ weatherVariables = ['weather', 'temp']
 weather: str = emptyTypes[str]
 temp: str = emptyTypes[str]
 weatherEmojiMapping = {
-    'Partly cloudy': '9925',
-    'Sunny': '9728',
-    'Clear': '9728',
-    'Overcast': 'x2601',
-    'Mist': '127745',
-    'Fog': '127745',
+    'Partly cloudy': '9925',            # ⛅
+    'Sunny': '9728',                    # ☀️
+    'Clear': '9728',                    # ☀️
+    'Overcast': 'x2601',                # ☁️
+    'Mist': '127745',                   # 🌁
+    'Fog': '127745',                    # 🌁
+    'Rain': '127783',                   # 🌧️
+
+    # Additional cloudy & overcast conditions
+    'Cloudy': '9729',                   # ☁️
+    'Patchy cloudy': '9925',            # ⛅
+
+    # Additional fog & visibility conditions
+    'Freezing fog': '127745',           # 🌁
+
+    # Rain, drizzle & showers
+    'Light rain': '127783',             # 🌧️
+    'Heavy rain': '127783',             # 🌧️
+    'Moderate rain': '127783',          # 🌧️
+    'Patchy rain possible': '127783',   # 🌧️
+    'Patchy light rain': '127783',      # 🌧️
+    'Light rain shower': '127783',      # 🌧️
+    'Moderate or heavy rain shower': '127783', # 🌧️
+    'Torrential rain shower': '127783', # 🌧️
+    'Heavy rain at times': '127783',    # 🌧️
+    'Patchy light drizzle': '127783',   # 🌧️
+    'Light drizzle': '127783',          # 🌧️
+    'Freezing drizzle': '127783',       # 🌧️
+    'Heavy freezing drizzle': '127783', # 🌧️
+
+    # Thunderstorms
+    'Thundery outbreaks possible': '9928',    # ⛈️
+    'Patchy light rain with thunder': '9928', # ⛈️
+    'Moderate or heavy rain with thunder': '9928', # ⛈️
+    'Patchy light snow with thunder': '9928', # ⛈️
+    'Moderate or heavy snow with thunder': '9928', # ⛈️
+
+    # Snow, sleet & ice pellets
+    'Snow': '127784',                   # 🌨️
+    'Light snow': '127784',             # 🌨️
+    'Heavy snow': '127784',             # 🌨️
+    'Moderate snow': '127784',          # 🌨️
+    'Patchy snow possible': '127784',   # 🌨️
+    'Patchy light snow': '127784',      # 🌨️
+    'Patchy moderate snow': '127784',   # 🌨️
+    'Patchy heavy snow': '127784',      # 🌨️
+    'Light snow showers': '127784',     # 🌨️
+    'Moderate or heavy snow showers': '127784', # 🌨️
+    'Blowing snow': '127784',           # 🌨️
+    'Blizzard': '127784',               # 🌨️
+    'Sleet': '127783',                  # 🌧️
+    'Light sleet': '127783',
+    'Moderate or heavy sleet': '127783',
+    'Light sleet showers': '127783',
+    'Moderate or heavy sleet showers': '127783',
+    'Ice pellets': '127783',
+    'Light showers of ice pellets': '127783',
+    'Moderate or heavy showers of ice pellets': '127783'
 }
 
 apiVariables: list[str] = emptyTypes[list]
 appVariables: list[str] = spotifyAPIVariables + spotifyTokenVariables + ['apiVariables'] + transitVariables + weatherVariables
-
-class HtmlTable(object):
-    '''
-    HtmlTable
-    '''
-
-    def __init__(self, url):
-        '''
-        Constructor
-        '''
-        firefoxOptions = Options()
-        firefoxOptions.binary_location = "/snap/firefox/current/usr/lib/firefox/firefox"
-        firefoxOptions.add_argument('--headless')
-        firefoxOptions.add_argument('--disable-gpu')
-        firefoxDriver = webdriver.Firefox(options=firefoxOptions)
-        firefoxDriver.get(url)
-        time.sleep(1)
-        page = firefoxDriver.page_source
-        firefoxDriver.quit()
-        #self.html_page = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'})
-        #print(requests.get(url, headers={'User-Agent': 'Mozilla/5.0'}).text)
-
-        self.soup = BeautifulSoup(page, 'html.parser')
-        #self.body = self.soup.find("table")
-        #print(self.body)
-
-    def get_weekday_tables(self,header_tag:str=None)->dict:
-        
-        tables = {'Weekday':{}}
-        for i,table in enumerate(self.soup.find_all("table")):
-            fields = []
-            record= {}
-            for td in table.find_all('tr', recursive=True)[0].find_all('td', recursive=True):
-                    text = re.sub("\n", "", td.text)
-                    label = re.search(".+?(?=Arrival)|.+?(?=Departure)|(?<=Arrival at).*", text)[0].strip()
-                    label = re.sub("\\xa0", "", label)
-                    label = re.sub("Exchange", "Exchange Place", label)
-                    label = re.sub("33 St", "33S", label)
-                    label = re.sub("\\.", "", label)
-                    fields.append(label)
-                    record[label] = []
-            #print(fields)
-            for i, tr in enumerate(table.find_all('tr', recursive=True)):
-                if i == 0:
-                        continue
-                for j, td in enumerate(tr.find_all('td', recursive=True)):
-                    record[fields[j]].append(td.text)
-            #print(record)
-                if fields[len(fields)-1] not in tables:
-                    tables['Weekday'][fields[len(fields)-1]] = {}
-                    tables['Weekday'][fields[len(fields)-1]][fields[0]] = record
-                else:
-                    if fields[0] in tables['Weekday'][fields[len(fields)-1]]:
-                        continue
-                    else:
-                        tables['Weekday'][fields[len(fields)-1]][fields[0]] = record    
-            
-        return tables
-
-    def get_weekend_tables(self,header_tag:str=None)->dict:
-
-        tables = {'Saturday':{}, 'Sunday':{}}
-        k = 0
-        c1 = 0
-        c2 = 0
-        for i,table in enumerate(self.soup.find_all("table")):
-            fields = []
-            record= {}
-            for td in table.find_all('tr', recursive=True)[0].find_all('td', recursive=True):
-                    text = re.sub("\n", "", td.text)
-                    label = re.search(".+?(?=Arrival)|.+?(?=Departure)|(?<=Arrival at).*", text)[0].strip()
-                    label = re.sub("\\xa0", "", label)
-                    label = re.sub("Exchange", "Exchange Place", label)
-                    label = re.sub("33 St", "33S", label)
-                    label = re.sub("\\.", "", label)
-                    fields.append(label)
-                    record[label] = []
-            #print(fields)
-            for i, tr in enumerate(table.find_all('tr', recursive=True)):
-                if i == 0:
-                        continue
-                for j, td in enumerate(tr.find_all('td', recursive=True)):
-                    record[fields[j]].append(td.text)
-            #print(record)
-            if k == 0:
-                if fields[len(fields)-1] not in tables['Saturday']:
-                    tables['Saturday'][fields[len(fields)-1]] = {}
-                    tables['Saturday'][fields[len(fields)-1]][fields[0]] = record
-                    c1+=1
-                else:
-                    if fields[0] in tables['Saturday'][fields[len(fields)-1]]:
-                        tables['Sunday'][fields[len(fields)-1]] = {}
-                        tables['Sunday'][fields[len(fields)-1]][fields[0]] = record
-                        k+=1
-                        c2+=1
-                        continue
-                    else:
-                        tables['Saturday'][fields[len(fields)-1]][fields[0]] = record
-                        c1+=1
-            if k == 1 and c2 < c1:
-                if fields[len(fields)-1] not in tables['Sunday']:
-                    tables['Sunday'][fields[len(fields)-1]] = {}
-                    tables['Sunday'][fields[len(fields)-1]][fields[0]] = record
-                    c2+=1
-                else:
-                    if fields[0] in tables['Sunday'][fields[len(fields)-1]]:
-                        print(fields[0] + ' - ' + fields[len(fields)-1])
-                        break
-                    else:
-                        tables['Sunday'][fields[len(fields)-1]][fields[0]] = record
-                        c2+=1
-            
-        return tables
 
 def checkForEmptyGlobalVariables(variableNames: list[str] | str) -> bool:
     if type(variableNames) == str:
@@ -224,16 +163,6 @@ def writeJSONVariables(variables: dict[str, Any]) -> None:
     jsonFile.close()
     return
 
-def fetchSchedules() -> None:
-    weekday_url="https://www.panynj.gov/path/en/schedules-maps/weekday-schedules.html"
-    weekday_schedule=HtmlTable(weekday_url)
-    weekday_schedule=weekday_schedule.get_weekday_tables()
-    weekend_url="https://www.panynj.gov/path/en/schedules-maps/weekend-schedules.html"
-    weekend_schedule=HtmlTable(weekend_url)
-    weekend_schedule=weekend_schedule.get_weekend_tables()
-    setGlobalVariable('schedule', weekday_schedule | weekend_schedule)
-    return
-
 def genRandomString(length: int) -> str:
     letters = string.ascii_letters + string.digits
     return emptyString.join(random.choice(letters) for i in range(length))
@@ -259,7 +188,6 @@ def refreshAuthToken() -> int:
         if 'refresh_token' in authJSON:
             setGlobalVariable('refresh_token', authJSON['refresh_token'])
         setGlobalVariable('expiresAt', datetime.today() + timedelta(seconds=(round(authJSON['expires_in']*0.75))))
-    fetchSchedules()
     return authResponse.status_code
 
 def getWeather() -> str:
@@ -380,12 +308,6 @@ def nextSong():
     else:
         quickView.logger.debug('Error when previous: ' + nextSuccess.status_code.__str__())
     return {'status': nextSuccess.status_code}
-
-# def addScheduledTimes(realTimeTransit: dict):
-#     for i in realTimeTransit:
-#         for j in realTimeTransit[i]:
-#             if len(j) < 1 or len([t for time in realTimeTransit[i][j] if time >= 10]) == 0:
-#                realTimeTransit[i][j] = realTimeTransit[i][j] + [t for  ]
                 
 def fetchTransitTimes() -> dict:
     pathJSON = requests.get("https://www.panynj.gov/bin/portauthority/ridepath.json", headers={'User-Agent':'Firefox'}).json()
