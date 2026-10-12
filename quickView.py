@@ -17,7 +17,7 @@ schedule: dict = {}
 weatherVariables = ['weather', 'temp']
 weather: str = emptyTypes[str]
 temp: str = emptyTypes[str]
-weather_emoji_mapping = {
+weatherEmojiMapping = {
     'Partly cloudy': '9925',            # ⛅
     'Sunny': '9728',                    # ☀️
     'Clear': '9728',                    # ☀️
