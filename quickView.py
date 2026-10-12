@@ -285,7 +285,7 @@ def fetchTransitTimes():
                             continue
                 
                 if prev_seconds:
-                    travel_constant_mins = travel_times.get((prev_code, considered), travel_times.get(considered, prev_code), 3)
+                    travel_constant_mins = travel_times.get((prev_code, considered), travel_times.get((considered, prev_code), 3))
                     travel_constant_secs = travel_constant_mins * 60
                     print(f"[DEBUG] -> Using travel offset: {travel_constant_mins} mins ({travel_constant_secs} secs) from {prev_station_name}")
                     
