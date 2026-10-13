@@ -24,6 +24,7 @@ weatherEmojiMapping = {
     'overcast': '9729',                  # ☁️
     'mist': '127745',                    # 🌁
     'fog': '127745',                     # 🌁
+    'smoky haze': '127745',
     'rain': '127783',                    # 🌧️
 
     # Additional cloudy & overcast conditions
@@ -132,7 +133,7 @@ def getWeather() -> str:
     city = "Jersey+City"
     w = requests.get(f"""https://wttr.in/{city}?format=%C""").text.strip().lower()
     t = re.search(r"\d+", requests.get(f"""https://wttr.in/{city}?format=%t""").text)[0]
-    w = weatherEmojiMapping.get(w, 2754)
+    w = weatherEmojiMapping.get(w, '2754')
     quickView.logger.debug(w)
     quickView.logger.debug(t)
     setGlobalVariable('weather', w)
